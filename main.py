@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # accepts two arguments - directory to parse and target scale
     downscale_parser = sp.add_parser('downscale')
     downscale_parser.add_argument('path', help='The directory path to downscale')
-    downscale_parser.add_argument('scale', help='The target scale', choices=[256, 512, 1024, 2048], type=int)
+    downscale_parser.add_argument('scale', help='The target scale', choices=[128, 256, 512, 1024, 2048], type=int)
     downscale_parser.add_argument('--force', help='True if the images with incorrect ratios should be resized',
                                   action='store_true')
     # accepts three or more arguments - model name, phase number, subdirectory in models

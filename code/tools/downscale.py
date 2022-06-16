@@ -16,7 +16,7 @@ def downscale(ctx: Context, path: str, scale: int, force: bool = False) -> None:
         return
 
     original_path = f'{ctx.working_path}/{path}'
-    backup_path = f'{ctx.working_path}/backup/{path}'
+    backup_path = f'{ctx.working_path}/backup/{path}-{scale}'
     backup_obj = pathlib.Path(backup_path)
     backup_obj.mkdir(exist_ok=True, parents=True)
 
