@@ -46,6 +46,11 @@ using the production directory is not recommended.
   * Doing this by hand is a tedious process. This script can do it automatically.
   * By default, only perfectly square images are processed. `--force` can be used to
   process rectangular images with a small accuracy loss.
+  * By default, force-rescaled images with higher width than height are moved to
+  the bottom of the square version. To prevent this, use `--truecenter`.
+  * `--bbox=<number>` allows to automatically crop the images to their bounding box,
+  to prevent downscaling images with large spaces. `10` is the recommended number,
+  the higher it is the more space will be left on sides. Disabled by default.
   * Run: `python main.py downscale <directory_path> <128|256|512|1024|2048>`
 
 ### Coming soon

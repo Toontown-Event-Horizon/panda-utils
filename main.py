@@ -42,7 +42,11 @@ if __name__ == '__main__':
     downscale_parser = sp.add_parser('downscale')
     downscale_parser.add_argument('path', help='The directory path to downscale')
     downscale_parser.add_argument('scale', help='The target scale', choices=[128, 256, 512, 1024, 2048], type=int)
-    downscale_parser.add_argument('--force', help='True if the images with incorrect ratios should be resized',
+    downscale_parser.add_argument('-f', '--force', help='True if the images with incorrect ratios should be resized',
+                                  action='store_true')
+    downscale_parser.add_argument('-b', '--bbox', help='Set the preferred distance between the image boundary and '
+                                                       'the non-transparent area, in %', type=int, default=-1)
+    downscale_parser.add_argument('-c', '--truecenter', help='Use true center for wide images with low height',
                                   action='store_true')
     # accepts three or more arguments - model name, phase number, subdirectory in models
     palettize_parser = sp.add_parser('palettize')
@@ -62,4 +66,5 @@ if __name__ == '__main__':
     elif ans.action == 'palettize':
         palettize.palettize(make_context(), ans.output, ans.phase, ans.subdir, *ans.pattern.split())
     elif ans.action == 'downscale':
-        downscale.downscale(make_context(), ans.path, ans.scale, force=ans.force)
+        downscale.downscale(make_context(), ans.path, ans.scale, force=ans.force, bbox_crop=ans.bbox,
+                            force_true_center=ans.truecenter)
