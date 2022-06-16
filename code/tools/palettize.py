@@ -11,13 +11,16 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, pattern1: s
     pathlib.Path(map_path).mkdir(exist_ok=True, parents=True)
     pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
 
-    file_list = util.get_file_list(ctx, f'{map_path}/{name}', ' '.join(patt))
-    print(f'Found {len(file_list)} files, copying to the workspace...')
+    file_list = set(util.get_file_list(ctx.resources_path, f'{map_path}/{name}', ' '.join(patt)))
+    existing_file_list = set(util.get_file_list(ctx.working_path, f'{map_path}/{name}', ' '.join(patt)))
+    print(f'Found {len(file_list - existing_file_list)} files, copying to the workspace...')
     for x in file_list:
-        shutil.copy(f'{ctx.resources_path}/{map_path}/{name}/{x}', f'{ctx.working_path}/{map_path}/{x}')
+        if not os.path.exists(f'{ctx.working_path}/{map_path}/{name}/{x}'):
+            shutil.copy(f'{ctx.resources_path}/{map_path}/{name}/{x}', f'{ctx.working_path}/{map_path}/{name}/{x}')
     print('Running egg-texture-cards...')
     egg_path = f'{model_path}/{name}.egg'
-    util.run_panda(ctx, 'egg-texture-cards', '-o', egg_path, *[f'{map_path}/{x}' for x in file_list])
+    union = file_list.union(existing_file_list)
+    util.run_panda(ctx, 'egg-texture-cards', '-o', egg_path, *[f'{map_path}/{name}/{x}' for x in union])
 
     print('Creating a TXA file...')
     # txa_text = self.create_txa(2048, file_list)
@@ -25,7 +28,7 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, pattern1: s
                ":imagetype png\n" \
                ":powertwo 1\n" \
                f":group {name} dir phase_{phase}/maps\n" \
-               "*.png : force-rgba dual linear clamp_u clamp_v margin 0\b"
+               "*.png : force-rgba dual linear clamp_u clamp_v margin 0\n"
     with open('textures.txa', 'w') as txa_file:
         txa_file.write(txa_text)
 
@@ -35,11 +38,9 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, pattern1: s
     print('Transforming eggs...')
     util.run_panda(ctx, 'egg-trans', egg_path, '-pc', map_path, '-o', egg_path)
     print('Converting to BAM...')
-    util.run_panda(ctx, 'egg2bam', egg_path, '-o', egg_path.replace('.egg', '.bam'))
+    util.run_panda(ctx, 'egg2bam', egg_path, '-o', egg_path.replace('.egg', '.bam'), timeout=10)
     print('Cleaning up...')
-    shutil.rmtree(f'{model_path}/phase_{phase}')
-    for x in file_list:
-        os.unlink(f'{ctx.working_path}/{map_path}/{x}')
-    os.unlink(egg_path)
+    shutil.rmtree(f'{model_path}/phase_{phase}', ignore_errors=True)  # happens due to a bug
+    # os.unlink(egg_path)
     os.unlink('textures.txa')
     print('Palettizing complete.')

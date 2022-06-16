@@ -7,7 +7,7 @@ from traceback import print_exc
 
 from code import util
 from code.shell import PandaShell
-from code.tools import convert, palettize
+from code.tools import convert, palettize, downscale
 
 
 def get_config() -> dict:
@@ -38,6 +38,12 @@ if __name__ == '__main__':
     # accepts one argument - path to .bam file
     bam2egg_parser = sp.add_parser('bam2egg')
     bam2egg_parser.add_argument('input', help='The .bam file to convert')
+    # accepts two arguments - directory to parse and target scale
+    downscale_parser = sp.add_parser('downscale')
+    downscale_parser.add_argument('path', help='The directory path to downscale')
+    downscale_parser.add_argument('scale', help='The target scale', choices=[256, 512, 1024, 2048], type=int)
+    downscale_parser.add_argument('--force', help='True if the images with incorrect ratios should be resized',
+                                  action='store_true')
     # accepts three or more arguments - model name, phase number, subdirectory in models
     palettize_parser = sp.add_parser('palettize')
     palettize_parser.add_argument('output', help='The name for the resulting .bam file')
@@ -55,3 +61,5 @@ if __name__ == '__main__':
         convert.bam2egg(make_context(), ans.input)
     elif ans.action == 'palettize':
         palettize.palettize(make_context(), ans.output, ans.phase, ans.subdir, *ans.pattern.split())
+    elif ans.action == 'downscale':
+        downscale.downscale(make_context(), ans.path, ans.scale, force=ans.force)

@@ -37,7 +37,16 @@ using the production directory is not recommended.
     safely removed after running.
     * `pattern` is optional and defaults to `*`. Right now it can either be `*` or the
     list of file names (i.e. `"water_gun.png fire_thrower.png laser.png"`). Self-explanatory.
+  * Can use files from under working directory as well as the resource
+  directory. Uses the working directory by default, delete or rename files
+  to load the original ones.
+* Automatic downscaler
+  * Many times, assets are made in high resolution, and then have to be downscaled to
+  a smaller one - 512x512 or 256x256.
+  * Doing this by hand is a tedious process. This script can do it automatically.
+  * By default, only perfectly square images are processed. `--force` can be used to
+  process rectangular images with a small accuracy loss.
+  * Run: `python main.py downscale <directory_path> <256|512|1024|2048>`
 
 ### Coming soon
 * Reverse palettizing based on the image coordinates
-* Image downscaling

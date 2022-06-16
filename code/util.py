@@ -27,8 +27,11 @@ class Context:
         return obj
 
 
-def get_file_list(ctx: Context, base_path: str, pattern: str) -> List[str]:
-    path = f'{ctx.resources_path}/{base_path}'
+def get_file_list(init_path: str, base_path: str, pattern: str) -> List[str]:
+    path = f'{init_path}/{base_path}'
+    if not os.path.exists(path):
+        return []
+
     file_list = os.listdir(path)
     files = set(file_list)
     if pattern != '*':
@@ -38,11 +41,12 @@ def get_file_list(ctx: Context, base_path: str, pattern: str) -> List[str]:
     return [x for x in files_list if x in files]
 
 
-def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2, debug: bool = False) -> str:
-    out = subprocess.Popen([f'{ctx.panda_path}/{command}', *args], stdout=subprocess.DEVNULL,
-                           stderr=subprocess.PIPE).communicate(timeout=timeout)
+def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2) -> str:
+    process = subprocess.Popen([f'{ctx.panda_path}/{command}', *args], stdout=subprocess.DEVNULL,
+                               stderr=subprocess.PIPE)
+    out = process.communicate(timeout=timeout)
     bts = out[1] if isinstance(out, tuple) else out
     out_str = bts.decode('utf-8')
-    if debug:
+    if process.returncode:
         print(out_str)
     return out_str
