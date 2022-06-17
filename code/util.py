@@ -27,18 +27,12 @@ class Context:
         return obj
 
 
-def get_file_list(init_path: str, base_path: str, pattern: str) -> List[str]:
+def get_file_list(init_path: str, base_path: str) -> List[str]:
     path = f'{init_path}/{base_path}'
     if not os.path.exists(path):
         return []
 
-    file_list = os.listdir(path)
-    files = set(file_list)
-    if pattern != '*':
-        files_list = pattern.split()
-    else:
-        files_list = file_list
-    return [x for x in files_list if x in files]
+    return os.listdir(path)
 
 
 def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2) -> str:

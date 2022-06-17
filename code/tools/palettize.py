@@ -5,14 +5,13 @@ import shutil
 from code import util
 
 
-def palettize(ctx: util.Context, name: str, phase: str, subdir: str, pattern1: str = '*', *pattern_extra: str) -> None:
-    patt = [pattern1, *pattern_extra]
+def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int = None) -> None:
     map_path, model_path = f'phase_{phase}/maps', f'phase_{phase}/models/{subdir}'
     pathlib.Path(map_path).mkdir(exist_ok=True, parents=True)
     pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
 
-    file_list = set(util.get_file_list(ctx.resources_path, f'{map_path}/{name}', ' '.join(patt)))
-    existing_file_list = set(util.get_file_list(ctx.working_path, f'{map_path}/{name}', ' '.join(patt)))
+    file_list = set(util.get_file_list(ctx.resources_path, f'{map_path}/{name}'))
+    existing_file_list = set(util.get_file_list(ctx.working_path, f'{map_path}/{name}'))
     print(f'Found {len(file_list - existing_file_list)} files, copying to the workspace...')
     for x in file_list:
         if not os.path.exists(f'{ctx.working_path}/{map_path}/{name}/{x}'):
@@ -20,7 +19,11 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, pattern1: s
     print('Running egg-texture-cards...')
     egg_path = f'{model_path}/{name}.egg'
     union = file_list.union(existing_file_list)
-    util.run_panda(ctx, 'egg-texture-cards', '-o', egg_path, *[f'{map_path}/{name}/{x}' for x in union])
+    args = ['-o', egg_path]
+    if poly:
+        args += ['-p', f'{poly},{poly}']
+    args += [f'{map_path}/{name}/{x}' for x in union]
+    util.run_panda(ctx, 'egg-texture-cards', *args)
 
     print('Creating a TXA file...')
     # txa_text = self.create_txa(2048, file_list)

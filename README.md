@@ -51,7 +51,7 @@ using the production directory is not recommended.
   * `--bbox=<number>` allows to automatically crop the images to their bounding box,
   to prevent downscaling images with large spaces. `10` is the recommended number,
   the higher it is the more space will be left on sides. Disabled by default.
-  * Run: `python main.py downscale <directory_path> <128|256|512|1024|2048>`
+  * Run: `python main.py downscale <directory_path> <64|128|256|512|1024>`
 
 ### Coming soon
 * Reverse palettizing based on the image coordinates

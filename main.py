@@ -41,7 +41,7 @@ if __name__ == '__main__':
     # accepts two arguments - directory to parse and target scale
     downscale_parser = sp.add_parser('downscale')
     downscale_parser.add_argument('path', help='The directory path to downscale')
-    downscale_parser.add_argument('scale', help='The target scale', choices=[128, 256, 512, 1024, 2048], type=int)
+    downscale_parser.add_argument('scale', help='The target scale', choices=[64, 128, 256, 512, 1024], type=int)
     downscale_parser.add_argument('-f', '--force', help='True if the images with incorrect ratios should be resized',
                                   action='store_true')
     downscale_parser.add_argument('-b', '--bbox', help='Set the preferred distance between the image boundary and '
@@ -54,8 +54,7 @@ if __name__ == '__main__':
     palettize_parser.add_argument('phase', default='3.5', help='The phase number to process')
     palettize_parser.add_argument('subdir', default='gui', help='The subdirectory inside models',
                                   choices=['char', 'gui', 'props', 'misc', 'fonts', 'shaders', 'modules'])
-    palettize_parser.add_argument('--pattern', default='*',
-                                  help='The image pattern to work with - defaults to all images in the directory.')
+    palettize_parser.add_argument('-p', '--poly', help='Set the size of a 1x1 node, in pixels.', type=int, default=0)
 
     ans = parser.parse_args()
     if ans.action == 'shell':
@@ -64,7 +63,7 @@ if __name__ == '__main__':
     elif ans.action == 'bam2egg':
         convert.bam2egg(make_context(), ans.input)
     elif ans.action == 'palettize':
-        palettize.palettize(make_context(), ans.output, ans.phase, ans.subdir, *ans.pattern.split())
+        palettize.palettize(make_context(), ans.output, ans.phase, ans.subdir, poly=ans.poly)
     elif ans.action == 'downscale':
         downscale.downscale(make_context(), ans.path, ans.scale, force=ans.force, bbox_crop=ans.bbox,
                             force_true_center=ans.truecenter)
