@@ -5,7 +5,7 @@ import shutil
 from code import util
 
 
-def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int = None) -> None:
+def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int = None, margin: int = 0) -> None:
     map_path, model_path = f'phase_{phase}/maps', f'phase_{phase}/models/{subdir}'
     pathlib.Path(map_path).mkdir(exist_ok=True, parents=True)
     pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
@@ -31,7 +31,7 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int =
                ":imagetype png\n" \
                ":powertwo 1\n" \
                f":group {name} dir phase_{phase}/maps\n" \
-               "*.png : force-rgba dual linear clamp_u clamp_v margin 0\n"
+               f"*.png : force-rgba dual linear clamp_u clamp_v margin {margin}\n"
     with open('textures.txa', 'w') as txa_file:
         txa_file.write(txa_text)
 

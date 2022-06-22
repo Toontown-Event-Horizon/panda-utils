@@ -55,6 +55,8 @@ if __name__ == '__main__':
     palettize_parser.add_argument('subdir', default='gui', help='The subdirectory inside models',
                                   choices=['char', 'gui', 'props', 'misc', 'fonts', 'shaders', 'modules'])
     palettize_parser.add_argument('-p', '--poly', help='Set the size of a 1x1 node, in pixels.', type=int, default=0)
+    palettize_parser.add_argument('-m', '--margin', help='Set the margin between textures, in pixels.',
+                                  type=int, default=0)
 
     ans = parser.parse_args()
     if ans.action == 'shell':

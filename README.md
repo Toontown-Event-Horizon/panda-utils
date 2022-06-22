@@ -40,6 +40,12 @@ using the production directory is not recommended.
   * Can use files from under working directory as well as the resource
   directory. Uses the working directory by default, delete or rename files
   to load the original ones.
+  * Additional parameters:
+    * `-p, --poly`: Set the pixel size per 1x1 node. Useful when palettizing related
+    images of different sizes, such as UI elements. By default, all images palettized
+    will be 1x1 in the scene graph.
+    * `-m, --margin`: Set the margin around the palettized image to prevent image
+    bleeding. Defaults to 0.
 * Automatic downscaler
   * Many times, assets are made in high resolution, and then have to be downscaled to
   a smaller one - 512x512 or 256x256.
