@@ -35,12 +35,12 @@ def get_file_list(init_path: str, base_path: str) -> List[str]:
     return os.listdir(path)
 
 
-def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2) -> str:
+def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2, debug: bool = False) -> str:
     process = subprocess.Popen([f'{ctx.panda_path}/{command}', *args], stdout=subprocess.DEVNULL,
                                stderr=subprocess.PIPE)
     out = process.communicate(timeout=timeout)
     bts = out[1] if isinstance(out, tuple) else out
     out_str = bts.decode('utf-8')
-    if process.returncode:
+    if process.returncode or debug:
         print(out_str)
     return out_str

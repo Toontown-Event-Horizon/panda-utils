@@ -35,9 +35,11 @@ if __name__ == '__main__':
 
     # accepts no arguments
     shell_parser = sp.add_parser('shell')
+
     # accepts one argument - path to .bam file
     bam2egg_parser = sp.add_parser('bam2egg')
     bam2egg_parser.add_argument('input', help='The .bam file to convert')
+
     # accepts two arguments - directory to parse and target scale
     downscale_parser = sp.add_parser('downscale')
     downscale_parser.add_argument('path', help='The directory path to downscale')
@@ -48,6 +50,7 @@ if __name__ == '__main__':
                                                        'the non-transparent area, in %', type=int, default=-1)
     downscale_parser.add_argument('-c', '--truecenter', help='Use true center for wide images with low height',
                                   action='store_true')
+
     # accepts three or more arguments - model name, phase number, subdirectory in models
     palettize_parser = sp.add_parser('palettize')
     palettize_parser.add_argument('output', help='The name for the resulting .bam file')
@@ -58,14 +61,41 @@ if __name__ == '__main__':
     palettize_parser.add_argument('-m', '--margin', help='Set the margin between textures, in pixels.',
                                   type=int, default=0)
 
+    # accepts one argument - path to the file
+    copy_parser = sp.add_parser('copy')
+    copy_parser.add_argument('input', help='The path to the file to copy')
+    copy_parser.add_argument('-r', '--reverse', help='Copy from resources instead', action='store_true')
+
+    pipeline_parser = sp.add_parser('pipeline')
+    pipeline_parser.add_argument('input', help='The input file to fix')
+
+    tbn_parser = sp.add_parser('tbn')
+    tbn_parser.add_argument('input', help='The input file to fix')
+
+    abspath_parser = sp.add_parser('abspath')
+    abspath_parser.add_argument('input', help='The input file to fix')
+
     ans = parser.parse_args()
+    ctx = make_context()
     if ans.action == 'shell':
         psh = PandaShell.from_config(get_config())
         loop(psh)
     elif ans.action == 'bam2egg':
-        convert.bam2egg(make_context(), ans.input)
+        convert.bam2egg(ctx, ans.input)
     elif ans.action == 'palettize':
-        palettize.palettize(make_context(), ans.output, ans.phase, ans.subdir, poly=ans.poly)
+        palettize.palettize(ctx, ans.output, ans.phase, ans.subdir, poly=ans.poly)
     elif ans.action == 'downscale':
-        downscale.downscale(make_context(), ans.path, ans.scale, force=ans.force, bbox_crop=ans.bbox,
+        downscale.downscale(ctx, ans.path, ans.scale, force=ans.force, bbox_crop=ans.bbox,
                             force_true_center=ans.truecenter)
+    elif ans.action == 'copy':
+        if ans.reverse:
+            convert.copy(ctx.resources_path, ctx.working_path, ans.input)
+        else:
+            convert.copy(ctx.working_path, ctx.resources_path, ans.input)
+    elif ans.action == 'pipeline':
+        convert.patch_pipeline(ctx, ans.input)
+    elif ans.action == 'tbn':
+        convert.eggtrans(ctx, ans.input)
+    elif ans.action == 'abspath':
+        convert.patch_egg(ctx, ans.input)
+

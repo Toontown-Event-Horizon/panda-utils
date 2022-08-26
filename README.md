@@ -58,6 +58,19 @@ using the production directory is not recommended.
   to prevent downscaling images with large spaces. `10` is the recommended number,
   the higher it is the more space will be left on sides. Disabled by default.
   * Run: `python main.py downscale <directory_path> <64|128|256|512|1024>`
+* Model fixing pipeline
+  * Sometimes models made a long time ago do not have correct binormals and can't be shaded
+  correctly. Attempting to manually add binormals often breaks the rig of the model.
+  * This script can automatically fix models' binormals. Not a 100% working process,
+  but works most of the time.
+  * In addition, fixes any absolute texture paths found in the model.
+  * Run: `python main.py pipeline <path_to_bam>`
+* Smaller utilities
+  * Add binormals to an egg file: `python main.py egg-trans <path_to_egg>`
+  * Fix absolute tex paths in an egg file: `python main.py patch <path_to_egg>`
+  * Copy a file from/to workspace to/from the resources folder: `python main.py copy <path_to_egg>`
+    * Defaults to copying from the workspace to the resources folder. 
+    * `-r`, `--reverse`: copies from resources to the workspace.
 
 ### Coming soon
 * Reverse palettizing based on the image coordinates
