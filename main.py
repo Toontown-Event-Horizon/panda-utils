@@ -83,7 +83,7 @@ if __name__ == '__main__':
     elif ans.action == 'bam2egg':
         convert.bam2egg(ctx, ans.input)
     elif ans.action == 'palettize':
-        palettize.palettize(ctx, ans.output, ans.phase, ans.subdir, poly=ans.poly)
+        palettize.palettize(ctx, ans.output, ans.phase, ans.subdir, poly=ans.poly, margin=ans.margin)
     elif ans.action == 'downscale':
         downscale.downscale(ctx, ans.path, ans.scale, force=ans.force, bbox_crop=ans.bbox,
                             force_true_center=ans.truecenter)
