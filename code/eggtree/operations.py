@@ -1,0 +1,16 @@
+from code.eggtree import eggparse
+
+
+def set_texture_prefix(tree: eggparse.EggTree, new_prefix: str) -> None:
+    textures = tree.findall("Texture")
+    for texture in textures:
+        texture_name = texture.get_child(0)
+        filename = texture_name.value.split("/")[-1]
+        texture_name.value = f"{new_prefix}/{filename}"
+
+
+def add_comment(tree: eggparse.EggTree, comment: str) -> None:
+    comment_str = eggparse.EggString(comment)
+    comment_tree = eggparse.EggTree(comment_str)
+    comment = eggparse.EggBranch("Comment", None, comment_tree)
+    tree.children.insert(2, comment)

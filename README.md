@@ -65,6 +65,13 @@ using the production directory is not recommended.
   but works most of the time.
   * In addition, fixes any absolute texture paths found in the model.
   * Run: `python main.py pipeline <path_to_bam>`
+* Toon head exporting
+  * While Panda3D has a lot of quirks with model loading, toon heads are notoriously
+  known as ones causing many issues. This script can convert them to the format that works.
+  * Requires exporting models to `egg` first. `yabee` mostly works for that if using Blender.
+  * Run: `python main.py toonhead <path_to_egg>`
+  * The procedure is due to DTM1218, I merely reimplemented it using a Syntax Tree 
+  instead of regexes.
 * Smaller utilities
   * Add binormals to an egg file: `python main.py egg-trans <path_to_egg>`
   * Fix absolute tex paths in an egg file: `python main.py patch <path_to_egg>`

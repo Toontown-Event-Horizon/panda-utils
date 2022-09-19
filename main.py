@@ -3,11 +3,9 @@
 import argparse
 import os
 from configparser import ConfigParser
-from traceback import print_exc
 
 from code import util
-from code.shell import PandaShell
-from code.tools import convert, palettize, downscale
+from code.tools import convert, palettize, downscale, toontown
 
 
 def get_config() -> dict:
@@ -21,20 +19,20 @@ def make_context() -> util.Context:
     return util.Context.from_config(get_config())
 
 
-def loop(shell):
-    try:
-        shell.cmdloop()
-    except Exception:  # noqa
-        print_exc()
-        loop(shell)
+ContextCommands = {
+    'bam2egg': (convert.bam2egg, "input"),
+    'palettize': (palettize.palettize, "output", "phase", "subdir", "poly", "margin"),
+    'downscale': (downscale.downscale, "path", "scale", "force", "bbox", "truecenter"),
+    'pipeline': (convert.patch_pipeline, "input"),
+    'tbn': (convert.eggtrans, "input"),
+    'abspath': (convert.patch_egg, "input"),
+    'toonhead': (toontown.toon_head, "input")
+}
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Perform various Panda3D model manipulations.')
     sp = parser.add_subparsers(description='Action to perform.', dest='action', required=True)
-
-    # accepts no arguments
-    shell_parser = sp.add_parser('shell')
 
     # accepts one argument - path to .bam file
     bam2egg_parser = sp.add_parser('bam2egg')
@@ -75,27 +73,18 @@ if __name__ == '__main__':
     abspath_parser = sp.add_parser('abspath')
     abspath_parser.add_argument('input', help='The input file to fix')
 
+    toonhead_parser = sp.add_parser('toonhead')
+    toonhead_parser.add_argument('input', help='The input file to fix')
+
     ans = parser.parse_args()
     ctx = make_context()
-    if ans.action == 'shell':
-        psh = PandaShell.from_config(get_config())
-        loop(psh)
-    elif ans.action == 'bam2egg':
-        convert.bam2egg(ctx, ans.input)
-    elif ans.action == 'palettize':
-        palettize.palettize(ctx, ans.output, ans.phase, ans.subdir, poly=ans.poly, margin=ans.margin)
-    elif ans.action == 'downscale':
-        downscale.downscale(ctx, ans.path, ans.scale, force=ans.force, bbox_crop=ans.bbox,
-                            force_true_center=ans.truecenter)
-    elif ans.action == 'copy':
+
+    if ans.action == 'copy':
         if ans.reverse:
             convert.copy(ctx.resources_path, ctx.working_path, ans.input)
         else:
             convert.copy(ctx.working_path, ctx.resources_path, ans.input)
-    elif ans.action == 'pipeline':
-        convert.patch_pipeline(ctx, ans.input)
-    elif ans.action == 'tbn':
-        convert.eggtrans(ctx, ans.input)
-    elif ans.action == 'abspath':
-        convert.patch_egg(ctx, ans.input)
+    elif ans.action in ContextCommands:
+        command, *args = ContextCommands[ans.action]
+        command(ctx, *[getattr(ans, arg) for arg in args])
 
