@@ -10,15 +10,13 @@ def toon_head(ctx: util.Context, path: str) -> None:
 
     eggtree = eggparse.egg_tokenize(data)
     operations.set_texture_prefix(eggtree, "phase_3/maps")
-    for material in eggtree.findall("Material"):
-        eggtree.remove_node(material)
 
-    for mref in eggtree.findall("MRef"):
-        eggtree.remove_node(mref)
-
-    for scalar in eggtree.findall("Scalar"):
-        if scalar.node_name == "uv-name":
-            eggtree.remove_node(scalar)
+    nodes_for_removal = (
+        eggtree.findall("Material") +
+        eggtree.findall("MRef") +
+        [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
+    )
+    eggtree.remove_node(set(nodes_for_removal))
 
     for uv in eggtree.findall("UV"):
         if uv.node_name == "UVMap":
