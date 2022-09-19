@@ -23,13 +23,12 @@ class EggTree:
         ans = [x.findall(node_type) for x in self.children]
         return functools.reduce(lambda x, y: x + y, ans, []) if ans else []
 
-    def remove_node(self, node):
-        if isinstance(node, EggNode):
-            node = {node}
-        if node in self.children:
-            self.children = [x for x in self.children if x != node]
+    def remove_nodes(self, nodeset):
+        if isinstance(nodeset, EggNode):
+            nodeset = {nodeset}
+        self.children = [x for x in self.children if x not in nodeset]
         for child in self.children:
-            child.remove_node(node)
+            child.remove_nodes(nodeset)
 
     def __getitem__(self, item):
         return self.children[item]
@@ -41,7 +40,7 @@ class EggNode(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def remove_node(self, node):
+    def remove_nodes(self, nodeset):
         pass
 
     @abc.abstractmethod
@@ -59,7 +58,7 @@ class EggString(EggNode):
     def findall(self, node_type):
         return []
 
-    def remove_node(self, node):
+    def remove_nodes(self, nodeset):
         pass
 
     def get_child(self, index):
@@ -82,7 +81,7 @@ class EggLeaf(EggNode):
             return [self]
         return []
 
-    def remove_node(self, node):
+    def remove_nodes(self, nodeset):
         pass
 
     def get_child(self, index):
@@ -113,11 +112,10 @@ class EggBranch(EggNode):
             ans += child.findall(node_type)
         return ans
 
-    def remove_node(self, node):
-        if node in self.children:
-            self.children = [x for x in self.children if x != node]
+    def remove_nodes(self, nodeset):
+        self.children = EggTree(*[x for x in self.children if x not in nodeset])
         for child in self.children:
-            child.remove_node(node)
+            child.remove_nodes(nodeset)
 
     def get_child(self, index):
         return self.children[index]

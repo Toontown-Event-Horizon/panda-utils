@@ -3,7 +3,7 @@ from code.eggtree import eggparse, operations
 
 
 def toon_head(ctx: util.Context, path: str) -> None:
-    util.run_panda(ctx, 'egg-optchar', '-keepall', '-inplace', 'dart', 'structured', path)
+    util.run_panda(ctx, 'egg-optchar', '-keepall', '-inplace', '-dart', 'structured', path)
 
     with open(f'{ctx.working_path}/{path}') as f:
         data = f.readlines()
@@ -16,7 +16,7 @@ def toon_head(ctx: util.Context, path: str) -> None:
         eggtree.findall("MRef") +
         [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
     )
-    eggtree.remove_node(set(nodes_for_removal))
+    eggtree.remove_nodes(set(nodes_for_removal))
 
     for uv in eggtree.findall("UV"):
         if uv.node_name == "UVMap":
