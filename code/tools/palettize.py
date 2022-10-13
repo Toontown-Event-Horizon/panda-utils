@@ -3,9 +3,11 @@ import pathlib
 import shutil
 
 from code import util
+from code.eggtree import eggparse
 
 
-def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int = None, margin: int = 0) -> None:
+def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int = None, margin: int = 0,
+              ordered: bool = False) -> None:
     map_path, model_path = f'phase_{phase}/maps', f'phase_{phase}/models/{subdir}'
     pathlib.Path(map_path).mkdir(exist_ok=True, parents=True)
     pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
@@ -40,6 +42,29 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int =
                    '-tn', f'mk2_{name}_palette_%p_%i', timeout=60)
     print('Transforming eggs...')
     util.run_panda(ctx, 'egg-trans', egg_path, '-pc', map_path, '-o', egg_path)
+
+    if ordered:
+        print('Removing ordering indices from the egg...')
+        with open(egg_path) as f:
+            data = f.readlines()
+
+        eggtree = eggparse.egg_tokenize(data)
+        all_groups = eggtree.findall("Group")
+        for group in all_groups:
+            if "-" not in group.node_name:
+                continue
+
+            name_split = group.node_name.split('-', 1)
+            try:
+                int(name_split[0])
+            except ValueError:
+                continue
+            else:
+                group.node_name = name_split[1]
+
+        with open(egg_path, 'w') as f:
+            f.write(str(eggtree))
+
     print('Converting to BAM...')
     util.run_panda(ctx, 'egg2bam', egg_path, '-o', egg_path.replace('.egg', '.bam'), timeout=10)
     print('Cleaning up...')

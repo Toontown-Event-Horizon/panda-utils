@@ -21,7 +21,7 @@ def make_context() -> util.Context:
 
 ContextCommands = {
     'bam2egg': (convert.bam2egg, "input"),
-    'palettize': (palettize.palettize, "output", "phase", "subdir", "poly", "margin"),
+    'palettize': (palettize.palettize, "output", "phase", "subdir", "poly", "margin", "ordered"),
     'downscale': (downscale.downscale, "path", "scale", "force", "bbox", "truecenter"),
     'pipeline': (convert.patch_pipeline, "input"),
     'tbn': (convert.eggtrans, "input"),
@@ -58,6 +58,10 @@ if __name__ == '__main__':
     palettize_parser.add_argument('-p', '--poly', help='Set the size of a 1x1 node, in pixels.', type=int, default=0)
     palettize_parser.add_argument('-m', '--margin', help='Set the margin between textures, in pixels.',
                                   type=int, default=0)
+    palettize_parser.add_argument('-O', '--ordered',
+                                  help='True if the palette should be ordered. The names of the input files '
+                                       'should start with <number>-.',
+                                  action='store_true')
 
     # accepts one argument - path to the file
     copy_parser = sp.add_parser('copy')
