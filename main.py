@@ -62,6 +62,7 @@ ArgumentDescriptions = {
     ),
     "truecenter": Argument("--truecenter", "Use true center for wide squished images", "-c", action="store_true"),
     "triplicate": Argument("--triplicate", "Add LOD names to the files", "-T", action="store_true"),
+    "reverse": Argument("--reverse", "Copy from the project folder to the working folder", "-r", action="store_true"),
 }
 
 
@@ -72,6 +73,7 @@ ContextCommands = {
     "downscale": (downscale.downscale, "input", "scale", "force", "bbox", "truecenter"),
     "pipeline": (convert.patch_pipeline, "input"),
     "tbn": (convert.eggtrans, "input"),
+    "copy": (convert.copy, "input", "reverse"),
     "abspath": (convert.patch_egg, "input"),
     "triplicate": (convert.build_lods, "input"),
     "toonhead": (toontown.toon_head, "input", "triplicate"),
