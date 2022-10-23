@@ -10,8 +10,8 @@ except ImportError:
 from code.util import Context
 
 
-def downscale(ctx: Context, path: str, scale: int, force: bool = False, bbox_crop: int = -1,
-              force_true_center: bool = True) -> None:
+def downscale(ctx: Context, path: str, scale: int, force: bool = False, bbox: int = -1,
+              truecenter: bool = True) -> None:
     if Image is None:
         print('Install PIL to use downscaler: pip install -r requirements.txt')
         return
@@ -31,9 +31,9 @@ def downscale(ctx: Context, path: str, scale: int, force: bool = False, bbox_cro
 
             shutil.copy(f'{original_path}/{x}', f'{backup_path}/{x}')
 
-            if bbox_crop >= 0:
+            if bbox >= 0:
                 left, top, right, bottom = img.getbbox()
-                bbox_w, bbox_h = (right - left) * bbox_crop // 100, (bottom - top) * bbox_crop // 100
+                bbox_w, bbox_h = (right - left) * bbox // 100, (bottom - top) * bbox // 100
                 left = max(0, left - bbox_w)
                 top = max(0, top - bbox_h)
                 right = min(img.width, right + bbox_w)
@@ -41,14 +41,14 @@ def downscale(ctx: Context, path: str, scale: int, force: bool = False, bbox_cro
                 img = img.crop((left, top, right, bottom))
 
             if img.width != img.height:
-                if not force and bbox_crop == -1:
+                if not force and bbox == -1:
                     print(f'Skipping {x} due to invalid size: width {img.width}, height {img.height}')
                     continue
 
                 # if we are asked to force downscale, try to add space, and center the image horizontally
                 # but push it to the bottom vertically
                 print('Force mode active, trying to add space...')
-                if img.width > img.height and not force_true_center:
+                if img.width > img.height and not truecenter:
                     img2 = Image.new('RGBA', (img.width, img.width))
                     img2.paste(img, (0, img.width - img.height, img.width, img.width))
                 else:

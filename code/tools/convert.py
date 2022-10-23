@@ -38,8 +38,8 @@ def patch_pipeline(ctx: util.Context, path: str) -> None:
     copy(ctx.working_path, ctx.resources_path, oppath, path)
 
 
-def eggtrans(ctx: util.Context, eggpath: str) -> None:
-    util.run_panda(ctx, 'egg-trans', '-tbnall', eggpath, '-o', eggpath)
+def eggtrans(ctx: util.Context, path: str) -> None:
+    util.run_panda(ctx, 'egg-trans', '-tbnall', path, '-o', path)
 
 
 def egg2bam(ctx: util.Context, eggpath: str) -> None:

@@ -6,25 +6,25 @@ from code import util
 from code.eggtree import eggparse
 
 
-def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int = None, margin: int = 0,
+def palettize(ctx: util.Context, output: str, phase: str, subdir: str, poly: int = None, margin: int = 0,
               ordered: bool = False) -> None:
     map_path, model_path = f'phase_{phase}/maps', f'phase_{phase}/models/{subdir}'
     pathlib.Path(map_path).mkdir(exist_ok=True, parents=True)
     pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
 
-    file_list = set(util.get_file_list(ctx.resources_path, f'{map_path}/{name}'))
-    existing_file_list = set(util.get_file_list(ctx.working_path, f'{map_path}/{name}'))
+    file_list = set(util.get_file_list(ctx.resources_path, f'{map_path}/{output}'))
+    existing_file_list = set(util.get_file_list(ctx.working_path, f'{map_path}/{output}'))
     print(f'Found {len(file_list - existing_file_list)} files, copying to the workspace...')
     for x in file_list:
-        if not os.path.exists(f'{ctx.working_path}/{map_path}/{name}/{x}'):
-            shutil.copy(f'{ctx.resources_path}/{map_path}/{name}/{x}', f'{ctx.working_path}/{map_path}/{name}/{x}')
+        if not os.path.exists(f'{ctx.working_path}/{map_path}/{output}/{x}'):
+            shutil.copy(f'{ctx.resources_path}/{map_path}/{output}/{x}', f'{ctx.working_path}/{map_path}/{output}/{x}')
     print('Running egg-texture-cards...')
-    egg_path = f'{model_path}/{name}.egg'
+    egg_path = f'{model_path}/{output}.egg'
     union = file_list.union(existing_file_list)
     args = ['-o', egg_path]
     if poly:
         args += ['-p', f'{poly},{poly}']
-    args += [f'{map_path}/{name}/{x}' for x in union]
+    args += [f'{map_path}/{output}/{x}' for x in union]
     util.run_panda(ctx, 'egg-texture-cards', *args)
 
     print('Creating a TXA file...')
@@ -32,14 +32,14 @@ def palettize(ctx: util.Context, name: str, phase: str, subdir: str, poly: int =
     txa_text = ":palette 2048 2048\n" \
                ":imagetype png\n" \
                ":powertwo 1\n" \
-               f":group {name} dir phase_{phase}/maps\n" \
+               f":group {output} dir phase_{phase}/maps\n" \
                f"*.png : force-rgba dual linear clamp_u clamp_v margin {margin}\n"
     with open('textures.txa', 'w') as txa_file:
         txa_file.write(txa_text)
 
     print('Palettizing...')
     util.run_panda(ctx, 'egg-palettize', '-opt', '-redo', '-noabs', '-nodb', '-inplace', egg_path, '-dm', map_path,
-                   '-tn', f'mk2_{name}_palette_%p_%i', timeout=60)
+                   '-tn', f'mk2_{output}_palette_%p_%i', timeout=60)
     print('Transforming eggs...')
     util.run_panda(ctx, 'egg-trans', egg_path, '-pc', map_path, '-o', egg_path)
 
