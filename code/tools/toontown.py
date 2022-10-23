@@ -1,8 +1,9 @@
 from code import util
 from code.eggtree import eggparse, operations
+from code.tools import convert
 
 
-def toon_head(ctx: util.Context, path: str) -> None:
+def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
     util.run_panda(ctx, "egg-optchar", "-keepall", "-inplace", "-dart", "structured", path)
 
     with open(f"{ctx.working_path}/{path}") as f:
@@ -32,4 +33,4 @@ def toon_head(ctx: util.Context, path: str) -> None:
     with open(f"{ctx.working_path}/{path}", "w") as f:
         f.write(str(eggtree))
 
-    util.run_panda(ctx, "egg2bam", path, "-o", path.replace(".egg", ".bam"))
+    convert.egg2bam(ctx, path, triplicate=triplicate)

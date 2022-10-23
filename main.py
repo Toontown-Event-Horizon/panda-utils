@@ -61,17 +61,20 @@ ArgumentDescriptions = {
         default=-1,
     ),
     "truecenter": Argument("--truecenter", "Use true center for wide squished images", "-c", action="store_true"),
+    "triplicate": Argument("--triplicate", "Add LOD names to the files", "-T", action="store_true"),
 }
 
 
 ContextCommands = {
     "bam2egg": (convert.bam2egg, "input"),
+    "egg2bam": (convert.egg2bam, "input", "triplicate"),
     "palettize": (palettize.palettize, "output", "phase", "subdir", "poly", "margin", "ordered"),
     "downscale": (downscale.downscale, "input", "scale", "force", "bbox", "truecenter"),
     "pipeline": (convert.patch_pipeline, "input"),
     "tbn": (convert.eggtrans, "input"),
     "abspath": (convert.patch_egg, "input"),
-    "toonhead": (toontown.toon_head, "input"),
+    "triplicate": (convert.build_lods, "input"),
+    "toonhead": (toontown.toon_head, "input", "triplicate"),
 }
 
 
