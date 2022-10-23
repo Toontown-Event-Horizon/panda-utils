@@ -6,45 +6,61 @@ from code import util
 from code.eggtree import eggparse
 
 
-def palettize(ctx: util.Context, output: str, phase: str, subdir: str, poly: int = None, margin: int = 0,
-              ordered: bool = False) -> None:
-    map_path, model_path = f'phase_{phase}/maps', f'phase_{phase}/models/{subdir}'
+def palettize(
+    ctx: util.Context, output: str, phase: str, subdir: str, poly: int = None, margin: int = 0, ordered: bool = False
+) -> None:
+    map_path, model_path = f"phase_{phase}/maps", f"phase_{phase}/models/{subdir}"
     pathlib.Path(map_path).mkdir(exist_ok=True, parents=True)
     pathlib.Path(model_path).mkdir(exist_ok=True, parents=True)
 
-    file_list = set(util.get_file_list(ctx.resources_path, f'{map_path}/{output}'))
-    existing_file_list = set(util.get_file_list(ctx.working_path, f'{map_path}/{output}'))
-    print(f'Found {len(file_list - existing_file_list)} files, copying to the workspace...')
+    file_list = set(util.get_file_list(ctx.resources_path, f"{map_path}/{output}"))
+    existing_file_list = set(util.get_file_list(ctx.working_path, f"{map_path}/{output}"))
+    print(f"Found {len(file_list - existing_file_list)} files, copying to the workspace...")
     for x in file_list:
-        if not os.path.exists(f'{ctx.working_path}/{map_path}/{output}/{x}'):
-            shutil.copy(f'{ctx.resources_path}/{map_path}/{output}/{x}', f'{ctx.working_path}/{map_path}/{output}/{x}')
-    print('Running egg-texture-cards...')
-    egg_path = f'{model_path}/{output}.egg'
+        if not os.path.exists(f"{ctx.working_path}/{map_path}/{output}/{x}"):
+            shutil.copy(f"{ctx.resources_path}/{map_path}/{output}/{x}", f"{ctx.working_path}/{map_path}/{output}/{x}")
+    print("Running egg-texture-cards...")
+    egg_path = f"{model_path}/{output}.egg"
     union = file_list.union(existing_file_list)
-    args = ['-o', egg_path]
+    args = ["-o", egg_path]
     if poly:
-        args += ['-p', f'{poly},{poly}']
-    args += [f'{map_path}/{output}/{x}' for x in union]
-    util.run_panda(ctx, 'egg-texture-cards', *args)
+        args += ["-p", f"{poly},{poly}"]
+    args += [f"{map_path}/{output}/{x}" for x in union]
+    util.run_panda(ctx, "egg-texture-cards", *args)
 
-    print('Creating a TXA file...')
+    print("Creating a TXA file...")
     # txa_text = self.create_txa(2048, file_list)
-    txa_text = ":palette 2048 2048\n" \
-               ":imagetype png\n" \
-               ":powertwo 1\n" \
-               f":group {output} dir phase_{phase}/maps\n" \
-               f"*.png : force-rgba dual linear clamp_u clamp_v margin {margin}\n"
-    with open('textures.txa', 'w') as txa_file:
+    txa_text = (
+        ":palette 2048 2048\n"
+        ":imagetype png\n"
+        ":powertwo 1\n"
+        f":group {output} dir phase_{phase}/maps\n"
+        f"*.png : force-rgba dual linear clamp_u clamp_v margin {margin}\n"
+    )
+    with open("textures.txa", "w") as txa_file:
         txa_file.write(txa_text)
 
-    print('Palettizing...')
-    util.run_panda(ctx, 'egg-palettize', '-opt', '-redo', '-noabs', '-nodb', '-inplace', egg_path, '-dm', map_path,
-                   '-tn', f'mk2_{output}_palette_%p_%i', timeout=60)
-    print('Transforming eggs...')
-    util.run_panda(ctx, 'egg-trans', egg_path, '-pc', map_path, '-o', egg_path)
+    print("Palettizing...")
+    util.run_panda(
+        ctx,
+        "egg-palettize",
+        "-opt",
+        "-redo",
+        "-noabs",
+        "-nodb",
+        "-inplace",
+        egg_path,
+        "-dm",
+        map_path,
+        "-tn",
+        f"mk2_{output}_palette_%p_%i",
+        timeout=60,
+    )
+    print("Transforming eggs...")
+    util.run_panda(ctx, "egg-trans", egg_path, "-pc", map_path, "-o", egg_path)
 
     if ordered:
-        print('Removing ordering indices from the egg...')
+        print("Removing ordering indices from the egg...")
         with open(egg_path) as f:
             data = f.readlines()
 
@@ -54,7 +70,7 @@ def palettize(ctx: util.Context, output: str, phase: str, subdir: str, poly: int
             if "-" not in group.node_name:
                 continue
 
-            name_split = group.node_name.split('-', 1)
+            name_split = group.node_name.split("-", 1)
             try:
                 int(name_split[0])
             except ValueError:
@@ -62,13 +78,13 @@ def palettize(ctx: util.Context, output: str, phase: str, subdir: str, poly: int
             else:
                 group.node_name = name_split[1]
 
-        with open(egg_path, 'w') as f:
+        with open(egg_path, "w") as f:
             f.write(str(eggtree))
 
-    print('Converting to BAM...')
-    util.run_panda(ctx, 'egg2bam', egg_path, '-o', egg_path.replace('.egg', '.bam'), timeout=10)
-    print('Cleaning up...')
-    shutil.rmtree(f'{model_path}/phase_{phase}', ignore_errors=True)  # happens due to a bug
+    print("Converting to BAM...")
+    util.run_panda(ctx, "egg2bam", egg_path, "-o", egg_path.replace(".egg", ".bam"), timeout=10)
+    print("Cleaning up...")
+    shutil.rmtree(f"{model_path}/phase_{phase}", ignore_errors=True)  # happens due to a bug
     # os.unlink(egg_path)
-    os.unlink('textures.txa')
-    print('Palettizing complete.')
+    os.unlink("textures.txa")
+    print("Palettizing complete.")

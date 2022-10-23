@@ -6,7 +6,7 @@ def set_texture_prefix(tree: eggparse.EggTree, new_prefix: str) -> None:
     for texture in textures:
         texture_name = texture.get_child(0)
         filename = texture_name.value.split("/")[-1]
-        texture_name.value = f'{texture_name.value[0]}{new_prefix}/{filename}'
+        texture_name.value = f"{texture_name.value[0]}{new_prefix}/{filename}"
 
 
 def add_comment(tree: eggparse.EggTree, comment: str) -> None:

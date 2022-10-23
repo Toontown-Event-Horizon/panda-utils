@@ -73,8 +73,8 @@ class EggLeaf(EggNode):
 
     def __repr__(self):
         if self.node_name:
-            return f'<{self.node_type}> {self.node_name.strip()} {{ {self.node_value.strip()} }}'
-        return f'<{self.node_type}> {{ {self.node_value.strip()} }}'
+            return f"<{self.node_type}> {self.node_name.strip()} {{ {self.node_value.strip()} }}"
+        return f"<{self.node_type}> {{ {self.node_value.strip()} }}"
 
     def findall(self, node_type):
         if self.node_type == node_type:
@@ -96,13 +96,13 @@ class EggBranch(EggNode):
 
     def __repr__(self):
         if self.node_name:
-            preamble = f'<{self.node_type}> {self.node_name} {{'
+            preamble = f"<{self.node_type}> {self.node_name} {{"
         else:
-            preamble = f'<{self.node_type}> {{'
+            preamble = f"<{self.node_type}> {{"
 
-        child_list = [f'  {child}' for child in self.children]
-        child_list = [x.replace('\n', '\n  ') for x in child_list]
-        return preamble + '\n' + '\n'.join(child_list) + '\n}'
+        child_list = [f"  {child}" for child in self.children]
+        child_list = [x.replace("\n", "\n  ") for x in child_list]
+        return preamble + "\n" + "\n".join(child_list) + "\n}"
 
     def findall(self, node_type):
         ans = []
@@ -124,8 +124,8 @@ class EggBranch(EggNode):
         self.children += child
 
 
-single_line_leaf_regex = re.compile(r'<([A-Za-z0-9_]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}')
-preline_regex = re.compile(r'<([A-Za-z0-9_]+)> ([-a-z0-9A-Z_.]+ )?\{([^\n]*)')
+single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
+preline_regex = re.compile(r"<([A-Za-z0-9_]+)> ([-a-z0-9A-Z_.]+ )?\{([^\n]*)")
 
 
 def subtree_tokenize(lines: List[str]):
@@ -133,20 +133,19 @@ def subtree_tokenize(lines: List[str]):
     if len(lines) == 1:
         match = single_line_leaf_regex.match(last_line)
         if not match:
-            raise ValueError(f'subtree_tokenize: Invalid single-line subtree: {lines[0]}')
+            raise ValueError(f"subtree_tokenize: Invalid single-line subtree: {lines[0]}")
 
         final = match.group(3)
-        if '}' not in final or match.group(1) == 'VertexRef':
+        if "}" not in final or match.group(1) == "VertexRef":
             return EggLeaf(match.group(1), match.group(2), final)
-        return EggBranch(match.group(1), match.group(2),
-                         EggTree(subtree_tokenize([final])))
+        return EggBranch(match.group(1), match.group(2), EggTree(subtree_tokenize([final])))
 
     lines = lines[:-1] + list(last_line)
     if lines[-1] != "}":
-        raise ValueError(f'subtree_tokenize: Invalid tree finish: {lines[-1]}')
+        raise ValueError(f"subtree_tokenize: Invalid tree finish: {lines[-1]}")
     preamble = preline_regex.match(lines[0])
     if not preamble:
-        raise ValueError(f'subtree_tokenize: Invalid preamble: {lines[0]}')
+        raise ValueError(f"subtree_tokenize: Invalid preamble: {lines[0]}")
     append = preamble.group(3)
     if append:
         lines.insert(1, append)
@@ -161,8 +160,8 @@ def egg_tokenize(lines: List[str]) -> EggTree:
     subtree = []
     for line in lines:
         line = line.strip()
-        if line.startswith('<') or current_indent:
-            current_indent += line.count('{') - line.count('}')
+        if line.startswith("<") or current_indent:
+            current_indent += line.count("{") - line.count("}")
             subtree.append(line)
             if current_indent == 0:
                 tree += subtree_tokenize(subtree)
@@ -171,5 +170,5 @@ def egg_tokenize(lines: List[str]) -> EggTree:
             tree += EggString(line)
 
     if current_indent > 0 or subtree:
-        raise ValueError(f'egg_tokenize: Invalid tree finish - indent {current_indent}, subtree {subtree})')
+        raise ValueError(f"egg_tokenize: Invalid tree finish - indent {current_indent}, subtree {subtree})")
     return tree

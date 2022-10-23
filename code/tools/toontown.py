@@ -3,18 +3,18 @@ from code.eggtree import eggparse, operations
 
 
 def toon_head(ctx: util.Context, path: str) -> None:
-    util.run_panda(ctx, 'egg-optchar', '-keepall', '-inplace', '-dart', 'structured', path)
+    util.run_panda(ctx, "egg-optchar", "-keepall", "-inplace", "-dart", "structured", path)
 
-    with open(f'{ctx.working_path}/{path}') as f:
+    with open(f"{ctx.working_path}/{path}") as f:
         data = f.readlines()
 
     eggtree = eggparse.egg_tokenize(data)
     operations.set_texture_prefix(eggtree, "phase_3/maps")
 
     nodes_for_removal = (
-        eggtree.findall("Material") +
-        eggtree.findall("MRef") +
-        [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
+        eggtree.findall("Material")
+        + eggtree.findall("MRef")
+        + [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
     )
     eggtree.remove_nodes(set(nodes_for_removal))
 
@@ -29,7 +29,7 @@ def toon_head(ctx: util.Context, path: str) -> None:
 
     operations.add_comment(eggtree, "Toontown-Event-Horizon/PandaUtils ToonHead module")
     print("Toon head successfully converted, building .bam file...")
-    with open(f'{ctx.working_path}/{path}', 'w') as f:
+    with open(f"{ctx.working_path}/{path}", "w") as f:
         f.write(str(eggtree))
 
-    util.run_panda(ctx, 'egg2bam', path, '-o', path.replace('.egg', '.bam'))
+    util.run_panda(ctx, "egg2bam", path, "-o", path.replace(".egg", ".bam"))
