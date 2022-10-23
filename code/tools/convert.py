@@ -100,7 +100,7 @@ def bam2egg(ctx: util.Context, path: str) -> None:
 
 
 def build_lods(ctx: util.Context, path: str) -> None:
-    if not path.endswith(".egg") or not path.endswith(".bam"):
+    if not path.endswith(".egg") and not path.endswith(".bam"):
         raise Exception("Only .egg and .bam files can be triplicated!")
 
     if any(f"-{lod}." in path for lod in (1000, 500, 250)):
