@@ -11,7 +11,13 @@ from code.util import Context
 
 
 def downscale(
-    ctx: Context, path: str, scale: int, force: bool = False, bbox: int = -1, truecenter: bool = True
+    ctx: Context,
+    path: str,
+    scale: int,
+    force: bool = False,
+    bbox: int = -1,
+    truecenter: bool = True,
+    ignore_current_scale: bool = False,
 ) -> None:
     if Image is None:
         print("Install PIL to use downscaler: pip install -r requirements.txt")
@@ -26,20 +32,19 @@ def downscale(
     for x in files:
         if ".png" in x:
             img = Image.open(f"{original_path}/{x}")
-            if img.width == scale and img.height == scale:
+            if not ignore_current_scale and img.width == scale and img.height == scale:
                 print(f"Skipping {x} as it is already resized")
                 continue
 
-            shutil.copy(f"{original_path}/{x}", f"{backup_path}/{x}")
+            if not os.path.exists(f"{backup_path}/{x}"):
+                shutil.copy(f"{original_path}/{x}", f"{backup_path}/{x}")
 
             if bbox >= 0:
+                canvas = Image.new("RGBA", (scale * 2, scale * 2), (0, 0, 0, 0))
                 left, top, right, bottom = img.getbbox()
                 bbox_w, bbox_h = (right - left) * bbox // 100, (bottom - top) * bbox // 100
-                left = max(0, left - bbox_w)
-                top = max(0, top - bbox_h)
-                right = min(img.width, right + bbox_w)
-                bottom = min(img.height, bottom + bbox_h)
-                img = img.crop((left, top, right, bottom))
+                canvas.paste(img.crop((left, top, right, bottom)), (bbox_w, bbox_h))
+                img = canvas.crop((0, 0, right + 2 * bbox_w, bottom + 2 * bbox_h))
 
             if img.width != img.height:
                 if not force and bbox == -1:

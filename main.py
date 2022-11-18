@@ -63,6 +63,12 @@ ArgumentDescriptions = {
     "truecenter": Argument("--truecenter", "Use true center for wide squished images", "-c", action="store_true"),
     "triplicate": Argument("--triplicate", "Add LOD names to the files", "-T", action="store_true"),
     "reverse": Argument("--reverse", "Copy from the project folder to the working folder", "-r", action="store_true"),
+    "ignore_current_scale": Argument(
+        "--ignore-current-scale",
+        "Resize images even if their target size equals the current size",
+        "-I",
+        action="store_true",
+    ),
 }
 
 
@@ -70,7 +76,7 @@ ContextCommands = {
     "bam2egg": (convert.bam2egg, "input"),
     "egg2bam": (convert.egg2bam, "input", "triplicate"),
     "palettize": (palettize.palettize, "output", "phase", "subdir", "poly", "margin", "ordered"),
-    "downscale": (downscale.downscale, "input", "scale", "force", "bbox", "truecenter"),
+    "downscale": (downscale.downscale, "input", "scale", "force", "bbox", "truecenter", "ignore_current_scale"),
     "pipeline": (convert.patch_pipeline, "input"),
     "tbn": (convert.eggtrans, "input"),
     "copy": (convert.copy, "input", "reverse"),
@@ -85,7 +91,7 @@ if __name__ == "__main__":
     sp = parser.add_subparsers(description="Action to perform.", dest="action", required=True)
 
     for argname, (func, *args) in ContextCommands.items():
-        subparser = sp.add_parser(argname, help=func.__doc__)
+        subparser = sp.add_parser(argname)
         for arg in args:
             ArgumentDescriptions[arg](subparser)
 
