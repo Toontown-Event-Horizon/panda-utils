@@ -24,9 +24,8 @@ def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
             uv.node_name = None
 
     for eyes in eggtree.findall("Texture"):
-        if eyes.node_name == "eyes":
-            scalar_alpha_dual = eggparse.EggLeaf("Scalar", "alpha", "dual")
-            eyes.add_child(scalar_alpha_dual)
+        scalar_alpha_dual = eggparse.EggLeaf("Scalar", "alpha", "dual")
+        eyes.add_child(scalar_alpha_dual)
 
     operations.add_comment(eggtree, "Toontown-Event-Horizon/PandaUtils ToonHead module")
     print("Toon head successfully converted, building .bam file...")
