@@ -38,13 +38,22 @@ def downscale(
 
             if not os.path.exists(f"{backup_path}/{x}"):
                 shutil.copy(f"{original_path}/{x}", f"{backup_path}/{x}")
+            else:
+                name, ext = x.rsplit(".", 1)
+                index = 1
+                while os.path.exists(f"{backup_path}/{name}-{index}.{ext}"):
+                    index += 1
+                shutil.copy(f"{original_path}/{x}", f"{backup_path}/{name}-{index}.{ext}")
 
             if bbox >= 0:
-                canvas = Image.new("RGBA", (scale * 2, scale * 2), (0, 0, 0, 0))
                 left, top, right, bottom = img.getbbox()
                 bbox_w, bbox_h = (right - left) * bbox // 100, (bottom - top) * bbox // 100
+                needed_width = right - left + bbox_w
+                needed_height = bottom - top + bbox_h
+                needed_size = max(needed_width, needed_height) * 2
+                canvas = Image.new("RGBA", (needed_size, needed_size), (0, 0, 0, 0))
                 canvas.paste(img.crop((left, top, right, bottom)), (bbox_w, bbox_h))
-                img = canvas.crop((0, 0, right + 2 * bbox_w, bottom + 2 * bbox_h))
+                img = canvas.crop((0, 0, right - left + 2 * bbox_w, bottom - top + 2 * bbox_h))
 
             if img.width != img.height:
                 if not force and bbox == -1:

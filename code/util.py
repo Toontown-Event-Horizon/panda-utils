@@ -32,7 +32,7 @@ def get_file_list(init_path: str, base_path: str) -> List[str]:
     if not os.path.exists(path):
         return []
 
-    return os.listdir(path)
+    return [file for file in os.listdir(path) if os.path.isfile(f"{path}/{file}")]
 
 
 def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2, debug: bool = False) -> str:
