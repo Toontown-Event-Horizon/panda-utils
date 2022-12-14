@@ -7,7 +7,7 @@ try:
 except ImportError:
     Image = None
 
-from code.util import Context
+from panda_utils.util import Context
 
 
 def downscale(

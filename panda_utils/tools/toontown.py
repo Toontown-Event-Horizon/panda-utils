@@ -1,6 +1,6 @@
-from code import util
-from code.eggtree import eggparse, operations
-from code.tools import convert
+from panda_utils import util
+from panda_utils.eggtree import eggparse, operations
+from panda_utils.tools import convert
 
 
 def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:

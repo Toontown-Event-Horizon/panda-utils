@@ -2,8 +2,8 @@ import os
 import pathlib
 import shutil
 
-from code import util
-from code.eggtree import eggparse
+from panda_utils import util
+from panda_utils.eggtree import eggparse
 
 
 def palettize(

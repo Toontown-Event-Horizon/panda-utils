@@ -1,4 +1,4 @@
-from code.eggtree import eggparse
+from panda_utils.eggtree import eggparse
 
 
 def set_texture_prefix(tree: eggparse.EggTree, new_prefix: str) -> None:

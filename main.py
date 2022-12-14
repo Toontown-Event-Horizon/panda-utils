@@ -4,8 +4,8 @@ import argparse
 import os
 from configparser import ConfigParser
 
-from code import util
-from code.tools import convert, palettize, downscale, toontown
+from panda_utils import util
+from panda_utils.tools import convert, palettize, downscale, toontown
 
 
 def get_config() -> dict:

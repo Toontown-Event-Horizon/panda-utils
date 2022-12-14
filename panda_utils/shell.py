@@ -4,8 +4,8 @@ import subprocess
 from cmd import Cmd
 from typing import List
 
-from code import util
-from code.tools import convert, palettize
+from panda_utils import util
+from panda_utils.tools import convert, palettize
 
 
 class PandaShell(Cmd, util.Context):
