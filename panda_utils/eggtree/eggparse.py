@@ -124,8 +124,8 @@ class EggBranch(EggNode):
         self.children += child
 
 
-single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
-preline_regex = re.compile(r"<([A-Za-z0-9_]+)> ([-a-z0-9A-Z_.]+ )?\{([^\n]*)")
+single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
+preline_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.<>\"]+ )?\{([^\n]*)")
 
 
 def subtree_tokenize(lines: List[str]):
