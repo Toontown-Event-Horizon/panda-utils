@@ -5,7 +5,7 @@ import os
 from configparser import ConfigParser
 
 from panda_utils import util
-from panda_utils.tools import convert, palettize, downscale, toontown
+from panda_utils.tools import animconvert, convert, palettize, downscale, toontown
 
 
 def get_config() -> dict:
@@ -31,6 +31,11 @@ class Argument:
             argparser.add_argument(self.name, self.other, help=self.description, **self.kwargs)
         else:
             argparser.add_argument(self.name, help=self.description, **self.kwargs)
+
+
+def convert_dict(argument: str) -> dict[str, str]:
+    arg_split = [x.split("=") for x in argument.split(",")]
+    return {x[0]: x[1] for x in arg_split}
 
 
 ArgumentDescriptions = {
@@ -69,6 +74,11 @@ ArgumentDescriptions = {
         "-I",
         action="store_true",
     ),
+    "conversion_names": Argument(
+        "conversion_names",
+        "List of comma-separated joint pairs",
+        type=convert_dict,
+    )
 }
 
 
@@ -83,6 +93,8 @@ ContextCommands = {
     "abspath": (convert.patch_egg, "input"),
     "triplicate": (convert.build_lods, "input"),
     "toonhead": (toontown.toon_head, "input", "triplicate"),
+    "animrename": (animconvert.animation_rename_bulk, "input", "output", "conversion_names"),
+    "fromfile": (None, "input"),
 }
 
 
@@ -98,6 +110,12 @@ if __name__ == "__main__":
     ans = parser.parse_args()
     ctx = make_context()
 
+    if ans.action == "fromfile":
+        with open(ans.input, "r") as f:
+            arguments = f.read()
+
+        ans = parser.parse_args(arguments.split(" "))
+
     if ans.action == "copy":
         if ans.reverse:
             convert.copy(ctx.resources_path, ctx.working_path, ans.input)
@@ -105,4 +123,7 @@ if __name__ == "__main__":
             convert.copy(ctx.working_path, ctx.resources_path, ans.input)
     elif ans.action in ContextCommands:
         command, *args = ContextCommands[ans.action]
+        if command is None:
+            print("Command not implemented")
+            exit(1)
         command(ctx, **{("path" if arg == "input" else arg): getattr(ans, arg) for arg in args})
