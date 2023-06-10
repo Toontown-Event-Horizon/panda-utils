@@ -1,3 +1,4 @@
+import logging
 import shutil
 import pathlib
 import os
@@ -8,6 +9,8 @@ except ImportError:
     Image = None
 
 from panda_utils.util import Context
+
+logger = logging.getLogger("panda_utils.downscale")
 
 
 def downscale(
@@ -20,7 +23,7 @@ def downscale(
     ignore_current_scale: bool = False,
 ) -> None:
     if Image is None:
-        print("Install PIL to use downscaler: pip install -r requirements.txt")
+        logger.error("Install PIL to use downscaler: pip install -r requirements.txt")
         return
 
     original_path = f"{ctx.working_path}/{path}"
@@ -33,7 +36,7 @@ def downscale(
         if ".png" in x:
             img = Image.open(f"{original_path}/{x}")
             if not ignore_current_scale and img.width == scale and img.height == scale:
-                print(f"Skipping {x} as it is already resized")
+                logger.info(f"Skipping {x} as it is already resized")
                 continue
 
             if not os.path.exists(f"{backup_path}/{x}"):
@@ -57,12 +60,12 @@ def downscale(
 
             if img.width != img.height:
                 if not force and bbox == -1:
-                    print(f"Skipping {x} due to invalid size: width {img.width}, height {img.height}")
+                    logger.warning(f"Skipping {x} due to invalid size: width {img.width}, height {img.height}")
                     continue
 
                 # if we are asked to force downscale, try to add space, and center the image horizontally
                 # but push it to the bottom vertically
-                print("Force mode active, trying to add space...")
+                logger.info("Force mode active, trying to add space...")
                 if img.width > img.height and not truecenter:
                     img2 = Image.new("RGBA", (img.width, img.width))
                     img2.paste(img, (0, img.width - img.height, img.width, img.width))
@@ -79,5 +82,5 @@ def downscale(
                         img2.paste(img, (height_delta, x_coord, even_fheight, even_fheight - x_coord))
                 img = img2
 
-            print(f"Rescaling {x}")
+            logger.info(f"Rescaling {x}")
             img.resize((scale, scale)).save(f"{original_path}/{x}")

@@ -1,26 +1,30 @@
+import logging
+
 from panda_utils import util
 from panda_utils.eggtree import eggparse, operations
+
+logger = logging.getLogger("panda_utils.animconvert")
 
 
 def animation_names(ctx: util.Context, path: str, output: str, conversion_names: dict[str, str]):
     eggpath = path.replace(".bam", ".egg")
 
     util.run_panda(ctx, "bam2egg", "-o", eggpath, path)
-    print(f"Converted file {path} to egg, reading data...")
+    logger.info(f"Converted file {path} to egg, reading data...")
 
     with open(eggpath) as f:
         data = f.readlines()
 
-    print("Data read, converting names...")
+    logger.info("Data read, converting names...")
 
     eggtree = eggparse.egg_tokenize(data)
     for node in eggtree.findall("Table"):
         if converted_name := conversion_names.get(node.node_name):
-            print(f"Converting {node.node_name} to {converted_name}")
+            logger.info(f"Converting {node.node_name} to {converted_name}")
             node.node_name = converted_name
 
     operations.add_comment(eggtree, "Toontown-Event-Horizon/PandaUtils Animation converter")
-    print("Finished converting names, creating new .bam file...")
+    logger.info("Finished converting names, creating new .bam file...")
     with open(eggpath, "w") as f:
         f.write(str(eggtree))
 

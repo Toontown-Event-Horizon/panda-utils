@@ -1,4 +1,4 @@
-# Panda3D Utils v0.1
+# Panda3D Utils v1.0
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 
@@ -27,11 +27,11 @@ using the production directory is not recommended.
   `-noabs`, surprisingly), some amount of manual work is involved, and it bloats
   the environment as well.
   * Currently, only creating palettes of images within one model is supported.
-  * Run: `python main.py palettize <directory_name> <phase_num> <model_type> <pattern>`
+  * Run: `python main.py palettize <directory_name> <phase_folder> <model_type> <pattern>`
     * The explanation below assumes your images are located in
     `resources/phase_6/maps/guns`.
     * `directory_name` is the directory containing the images, i.e. `guns`.
-    * `phase_num` is `6` in this scenario, `model_type` is probably `props`.
+    * `phase_folder` is `phase_6` in this scenario, `model_type` is probably `props`.
     * The palette will be saved under `resources/phase_6/maps`,
     and the model under `resources/phase_6/model/props`. The initial images can be
     safely removed after running.
@@ -81,3 +81,31 @@ using the production directory is not recommended.
 
 ### Coming soon
 * Reverse palettizing based on the image coordinates
+
+## Programmatical usage
+Panda-Utils can be used programmatically. For any operations, a context must be
+created. The easiest way to create a context is by calling `from_config`:
+
+```python
+from panda_utils.util import Context
+
+ctx = Context.from_config({
+  "paths": {"resources": "path/to/resources/folder",
+            "panda": "path/to/panda/installation/bin"}
+})
+```
+
+Instead of providing the Panda3D path directly, you can inherit it from the
+Python site_packages path:
+
+
+```python
+from panda_utils.util import Context
+
+ctx = Context.from_config({
+  "paths": {"resources": "path/to/resources/folder"},
+  "options": {"panda3d_path_inherit": True}
+})
+```
+
+This requires Panda3D to be installed in the same venv with this package.

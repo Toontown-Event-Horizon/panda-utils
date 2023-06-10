@@ -1,11 +1,14 @@
 import os
 import pathlib
 import shutil
+import logging
 from typing import List
 
 from panda_utils import util
 
 LODs = ["-1000", "-500", "-250"]
+
+logger = logging.getLogger("panda_utils.converter")
 
 
 def copy_single(source_path: pathlib.Path, target_path: pathlib.Path) -> None:
@@ -46,7 +49,7 @@ def patch_egg(ctx: util.Context, path: str) -> None:
     data = data.replace(f"{ctx.working_path}/", "").replace(ctx.working_path, "")
     with open(f"{ctx.working_path}/{path}", "w") as f:
         f.write(data)
-    print("Patched absolute source paths!")
+    logger.info("Patched absolute source paths!")
 
 
 def patch_pipeline(ctx: util.Context, path: str) -> None:
@@ -75,15 +78,18 @@ def copy_errors(ctx: util.Context, path: str, errored_files: List[str]) -> bool:
             possible_paths.append(f"{partial_abspath}/{x}")
 
         if not possible_paths:
-            p2 = input(f"Unable to find {x} in resources. Enter path to copy from: ")
+            if util.interactive:
+                p2 = input(f"Unable to find {x} in resources. Enter path to copy from: ")
+            else:
+                p2 = None
             if not p2:
-                print(f"Unable to get {x} from anywhere, aborting.")
+                logger.error(f"Unable to get {x} from anywhere, aborting.")
                 return False
             possible_paths.append(p2)
 
         newest_file = max(possible_paths, key=os.path.getctime)
         if newest_file != target_path:
-            print(f"Copying {x} from resources.")
+            logger.info(f"Copying {x} from resources.")
             pathlib.Path(target_path).parent.mkdir(exist_ok=True, parents=True)
             shutil.copy(newest_file, target_path)
 
@@ -115,13 +121,13 @@ def bam2egg(ctx: util.Context, path: str) -> None:
     output = util.run_panda(ctx, "bam2egg", path, "-o", path.replace(".bam", ".egg"))
     errored_files = ctx.regex_collection.not_found.findall(output)
     if not errored_files:
-        print("Recompilation not needed!")
+        logger.info("Recompilation not needed!")
         patch_egg(ctx, path.replace("bam", "egg"))
         return
 
     if not copy_errors(ctx, path, errored_files):
         return
-    print("Recompiling egg...")
+    logger.info("Recompiling egg...")
     util.run_panda(ctx, "bam2egg", path, "-o", path.replace(".bam", ".egg"), debug=True)
     patch_egg(ctx, path.replace(".bam", ".egg"))
 

@@ -1,3 +1,5 @@
 config.ini
 .idea
 venv
+dist
+panda_utils.egg-info

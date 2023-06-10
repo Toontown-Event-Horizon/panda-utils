@@ -1,6 +1,10 @@
+import logging
+
 from panda_utils import util
 from panda_utils.eggtree import eggparse, operations
 from panda_utils.tools import convert
+
+logger = logging.getLogger("panda_utils.toontown")
 
 
 def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
@@ -10,7 +14,7 @@ def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
         data = f.readlines()
 
     eggtree = eggparse.egg_tokenize(data)
-    operations.set_texture_prefix(eggtree, "phase_3/maps")
+    operations.set_texture_prefix(eggtree, f"{util.toon_head_phase}/maps")
 
     nodes_for_removal = (
         eggtree.findall("Material")
@@ -28,7 +32,7 @@ def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
         eyes.add_child(scalar_alpha_dual)
 
     operations.add_comment(eggtree, "Toontown-Event-Horizon/PandaUtils ToonHead module")
-    print("Toon head successfully converted, building .bam file...")
+    logger.info("Toon head successfully converted, building .bam file...")
     with open(f"{ctx.working_path}/{path}", "w") as f:
         f.write(str(eggtree))
 

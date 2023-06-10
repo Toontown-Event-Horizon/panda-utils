@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
 import os
 from configparser import ConfigParser
 
@@ -78,32 +79,75 @@ ArgumentDescriptions = {
         "conversion_names",
         "List of comma-separated joint pairs",
         type=convert_dict,
-    )
+    ),
 }
 
 
 ContextCommands = {
-    "bam2egg": (convert.bam2egg, "input"),
-    "egg2bam": (convert.egg2bam, "input", "triplicate"),
-    "palettize": (palettize.palettize, "output", "phase", "subdir", "poly", "margin", "ordered"),
-    "downscale": (downscale.downscale, "input", "scale", "force", "bbox", "truecenter", "ignore_current_scale"),
-    "pipeline": (convert.patch_pipeline, "input"),
-    "tbn": (convert.eggtrans, "input"),
-    "copy": (convert.copy, "input", "reverse"),
-    "abspath": (convert.patch_egg, "input"),
-    "triplicate": (convert.build_lods, "input"),
-    "toonhead": (toontown.toon_head, "input", "triplicate"),
-    "animrename": (animconvert.animation_rename_bulk, "input", "output", "conversion_names"),
-    "fromfile": (None, "input"),
+    "bam2egg": ("Converts Bam files to Egg files, copying missing resources.", convert.bam2egg, "input"),
+    "egg2bam": ("Converts Egg files to Bam files, copying missing resources.", convert.egg2bam, "input", "triplicate"),
+    "palettize": (
+        "Creates palettes of 2D images.",
+        palettize.palettize,
+        "output",
+        "phase",
+        "subdir",
+        "poly",
+        "margin",
+        "ordered",
+    ),
+    "downscale": (
+        "Rescales a set of 2D images to the given size.",
+        downscale.downscale,
+        "input",
+        "scale",
+        "force",
+        "bbox",
+        "truecenter",
+        "ignore_current_scale",
+    ),
+    "pipeline": ("Fixes binormals and resource paths on a Bam file.", convert.patch_pipeline, "input"),
+    "tbn": ("Fixes binormals on a Egg file.", convert.eggtrans, "input"),
+    "copy": (
+        "Copies a file from the working directory into the dist directory, or vice versa.",
+        convert.copy,
+        "input",
+        "reverse",
+    ),
+    "abspath": ("Fixes absolute paths on a Egg file.", convert.patch_egg, "input"),
+    "triplicate": (
+        "Copies a file for 1000, 500, and 250 LOD. Does not decimate the model.",
+        convert.build_lods,
+        "input",
+    ),
+    "toonhead": ("Fixes toon head models for Toontown purposes.", toontown.toon_head, "input", "triplicate"),
+    "animrename": (
+        "Changes joint names on an animation.",
+        animconvert.animation_rename_bulk,
+        "input",
+        "output",
+        "conversion_names",
+    ),
+    "fromfile": ("Run a command written inside a text file.", None, "input"),
 }
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Perform various Panda3D model manipulations.")
+    util.interactive = True
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
+    console.setFormatter(formatter)
+    logger = logging.getLogger("panda_utils")
+    logger.setLevel(logging.INFO)
+    logger.addHandler(console)
+
+    parser = argparse.ArgumentParser(prog="panda_utils", description="Perform various Panda3D model manipulations.")
     sp = parser.add_subparsers(description="Action to perform.", dest="action", required=True)
 
-    for argname, (func, *args) in ContextCommands.items():
-        subparser = sp.add_parser(argname)
+    for argname, (desc, func, *args) in ContextCommands.items():
+        subparser = sp.add_parser(argname, help=desc)
         for arg in args:
             ArgumentDescriptions[arg](subparser)
 
