@@ -13,7 +13,7 @@ def get_config() -> dict:
     cp = ConfigParser()
     path = os.path.dirname(os.path.abspath(__file__))
     cp.read(f"{path}/config.ini")
-    return cp
+    return {s: dict(cp.items(s)) for s in cp.sections()}
 
 
 def make_context() -> util.Context:

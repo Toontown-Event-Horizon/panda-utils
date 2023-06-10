@@ -5,7 +5,9 @@ def set_texture_prefix(tree: eggparse.EggTree, new_prefix: str) -> None:
     textures = tree.findall("Texture")
     for texture in textures:
         texture_name = texture.get_child(0)
-        filename = texture_name.value.split("/")[-1]
+        # This thing is a bit annoying because right now eggtree does not remove the quotes from strings
+        # So if there's no quotes, both quotes will remain in the filename, causing quote duplication
+        filename = texture_name.value[1:].split("/")[-1]
         texture_name.value = f"{texture_name.value[0]}{new_prefix}/{filename}"
 
 
