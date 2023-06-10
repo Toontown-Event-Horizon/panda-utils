@@ -44,7 +44,7 @@ class Context:
             ]
             for path in paths:
                 if path:
-                    obj.panda_path = str(path)
+                    obj.panda_path = str(path.parent)
                     break
         if not obj.panda_path:
             obj.panda_path = paths.get("panda")
