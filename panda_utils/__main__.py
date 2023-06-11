@@ -2,8 +2,9 @@
 
 import argparse
 import logging
-import os
 from configparser import ConfigParser
+
+import platformdirs
 
 from panda_utils import util
 from panda_utils.tools import animconvert, convert, palettize, downscale, toontown
@@ -11,8 +12,12 @@ from panda_utils.tools import animconvert, convert, palettize, downscale, toonto
 
 def get_config() -> dict:
     cp = ConfigParser()
-    path = os.path.dirname(os.path.abspath(__file__))
-    cp.read(f"{path}/config.ini")
+    path = platformdirs.user_config_path("panda-utils")
+    print(f"Loading config from {path}")
+    success_reading = cp.read(path)
+    if not success_reading:
+        print("The configuration file not found! Copy config_example.ini into the path above and edit it as needed.")
+        exit(1)
     return {s: dict(cp.items(s)) for s in cp.sections()}
 
 
@@ -166,7 +171,7 @@ if __name__ == "__main__":
         else:
             convert.copy(ctx.working_path, ctx.resources_path, ans.input)
     elif ans.action in ContextCommands:
-        command, *args = ContextCommands[ans.action]
+        description, command, *args = ContextCommands[ans.action]
         if command is None:
             print("Command not implemented")
             exit(1)
