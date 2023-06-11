@@ -2,21 +2,20 @@
 
 import argparse
 import logging
-from configparser import ConfigParser
-
-import platformdirs
 
 from panda_utils import util
 from panda_utils.tools import animconvert, convert, palettize, downscale, toontown
 
 
 def get_config() -> dict:
+    from configparser import ConfigParser
+    import platformdirs
+
     cp = ConfigParser()
     path = platformdirs.user_config_path("panda-utils")
-    print(f"Loading config from {path}")
     success_reading = cp.read(path)
     if not success_reading:
-        print("The configuration file not found! Copy config_example.ini into the path above and edit it as needed.")
+        print(f"The configuration file not found! Copy config_example.ini into {path} and edit it as needed.")
         exit(1)
     return {s: dict(cp.items(s)) for s in cp.sections()}
 

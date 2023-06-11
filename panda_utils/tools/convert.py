@@ -16,7 +16,7 @@ def copy_single(source_path: pathlib.Path, target_path: pathlib.Path) -> None:
         return
 
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source_path, target_path)
+    shutil.copytree(source_path, target_path, dirs_exist_ok=True)
 
 
 def copy(source: str, target: str, path: str, target_fn: str = None) -> None:

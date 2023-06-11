@@ -16,9 +16,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[options.extra_require]
+[project.optional-dependencies]
 imagery = ["Pillow>=9.0.0"]
 autopath = ["panda3d>=1.10"]
+runnable = ["platformdirs"]
 
 [project.urls]
 homepage = "https://github.com/toontown-event-horizon/panda-utils"
