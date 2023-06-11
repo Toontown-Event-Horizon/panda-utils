@@ -1,3 +1,4 @@
+import importlib.resources
 import logging
 import os
 import pathlib
@@ -71,6 +72,10 @@ def run_panda(ctx: Context, command: str, *args: str, timeout: int = 2, debug: b
     if process.returncode or debug:
         logger.warning(out_str)
     return out_str
+
+
+def get_data_file_path(filename):
+    return importlib.resources.files("panda_utils").joinpath(filename)
 
 
 interactive = False

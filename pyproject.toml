@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "panda_utils"
-version = "1.0.2"
+version = "1.1"
 authors = [
     {name = "Toontown: Event Horizon", email = "development@toontowneventhorizon.com"}
 ]
 description = "PandaUtils includes multiple tools for basic Panda3D automation"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3.8",
     "License :: OSI Approved :: MIT License",
@@ -17,9 +17,12 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-imagery = ["Pillow>=9.0.0"]
-autopath = ["panda3d>=1.10"]
-runnable = ["platformdirs"]
+imagery = ["Pillow~=9.0"]
+autopath = ["panda3d~=1.10,!=1.10.13.*"]
+runnable = ["platformdirs~=3.5"]
+pipeline = ["pyyaml~=6.0", "numpy~=9.0", "panda3d-blend2bam", "panda3d~=1.10,!=1.10.13.*"]
+
+everything = ["panda_utils[imagery]", "panda_utils[autopath]", "panda_utils[runnable]", "panda_utils[pipeline]"]
 
 [project.urls]
 homepage = "https://github.com/toontown-event-horizon/panda-utils"
