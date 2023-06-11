@@ -136,7 +136,7 @@ ContextCommands = {
 }
 
 
-if __name__ == "__main__":
+def main():
     util.interactive = True
 
     console = logging.StreamHandler()
@@ -175,3 +175,7 @@ if __name__ == "__main__":
             print("Command not implemented")
             exit(1)
         command(ctx, **{("path" if arg == "input" else arg): getattr(ans, arg) for arg in args})
+
+
+if __name__ == "__main__":
+    main()
