@@ -3,10 +3,15 @@ import os
 import shutil
 import sys
 
+import yaml
+
 from panda_utils.assetpipeline import imports
 from panda_utils.util import Context
 
 OUTPUT_PARENT = "built"
+# The pipeline will look for this file inside the input data whenever a [] callback is encountered
+YAML_CONFIG_FILENAME = "model-config.yml"
+logger = logging.getLogger("panda_utils.pipeline")
 
 
 class AssetContext:
@@ -29,15 +34,34 @@ class AssetContext:
     def files(self):
         return os.listdir()
 
+    def run_action_through_config(self, action, name):
+        if YAML_CONFIG_FILENAME not in self.files:
+            return
+
+        with open(YAML_CONFIG_FILENAME) as f:
+            data = yaml.safe_load(f)
+
+        if name not in data:
+            return
+
+        args = data[name]
+        if isinstance(args, dict):
+            action(self, **args)
+        elif isinstance(args, list):
+            for kwargs in args:
+                action(self, **kwargs)
+        else:
+            logger.warning("%s: Invalid configured arguments: %s (expected list or dict)", self.name, type(args))
+
 
 def main():
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
     console.setFormatter(formatter)
-    logger = logging.getLogger("")
-    logger.setLevel(logging.INFO)
-    logger.addHandler(console)
+    global_logger = logging.getLogger("")
+    global_logger.setLevel(logging.INFO)
+    global_logger.addHandler(console)
 
     _, input_folder, output_phase, output_folder, *pipeline = sys.argv
     ctx = AssetContext(input_folder, output_phase, output_folder)
@@ -62,13 +86,23 @@ def main():
         if not ctx.valid:
             logger.warning("The context for %s was aborted", ctx.name)
             return
-        method_name, *args = method.split(":")
+
+        if method.endswith("[]"):
+            method_name = method[:-2]
+            args = ()
+            use_config = True
+        else:
+            method_name, *args = method.split(":")
+            use_config = False
         action = imports.ALL_ACTIONS.get(method_name)
         if not action:
             logger.error("Action %s not found", method_name)
             # exit(1)
         else:
-            action(ctx, *args)
+            if use_config:
+                ctx.run_action_through_config(action, method_name)
+            else:
+                action(ctx, *args)
 
 
 if __name__ == "__main__":

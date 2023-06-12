@@ -124,6 +124,12 @@ class EggBranch(EggNode):
         self.children += child
 
 
+def sanitize_string(val):
+    if val and val[0] in '"\'':
+        return val[1:-1]
+    return val
+
+
 single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
 preline_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.<>\"]+ )?\{([^\n]*)")
 

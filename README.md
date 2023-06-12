@@ -1,4 +1,4 @@
-# Panda3D Utils v1.1
+# Panda3D Utils v1.2
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 
@@ -121,6 +121,9 @@ This can be used manually through scripts, and also supports batch processing
 (for example, through Makefiles). Parallel execution works as well, as long
 as no two models have the same model name.
 
+*NOTE: the pipeline is currently in an unstable state. Expect the API to break
+a lot.*
+
 The pipeline can be started through:
 ```shell
 python -m panda_utils.assetpipeline path/to/input_folder {phase_X} {category} [step1] [step2] [...]
@@ -152,6 +155,38 @@ folder can be committed into version control.
 Each step includes a step name and optionally arguments to that step, colon-separated.
 For example, `step_name:arg1:arg2` will call the step `step_name` with the arguments
 `arg1` and `arg2`. The steps are called in order from left to right.
+
+Any step accepting arguments can be called with `step_name[]` without any arguments.
+In that case, the step will take the arguments from a YAML file named `model-config.yml`
+in the asset input directory. It is parsed as follows:
+
+* First, the yaml field with the name = the step name is taken from the file.
+* If that field is not present, or the file is not present, the step has
+  no effect.
+* If the field is a dictionary, it will be applied as keyword arguments.
+* If the field is a list, the step will be applied once for each dictionary
+  inside of it in the proper order.
+
+This sounds confusing, so here's an example of such a config file:
+
+```yaml
+transform:
+  - scale: 10
+  - rotate: 0,0,180
+collide:
+  flags: keep,descend
+  method: polyset
+  group_name: optimized
+```
+
+When a `transform[]` action is encountered, two transform steps will be called
+in order, first the node will be rescaled, and then it will be rotated.
+When a `collide[]` action is encountered, it will be called once with the given
+arguments. If a different `[]` action is encountered, it will not run.
+This method is used for easy interaction with Makefiles (if the input folder 
+is set as the makefile dependency, changing this file will cause the task
+building a given asset to be rerun).
+
 The list of all currently existing steps is below.
 
 ### Preblend
@@ -159,7 +194,8 @@ The list of all currently existing steps is below.
 This step will convert OBJ or FBX models into BLEND. It requires installing
 Blender on the machine. Note that due to specifics of various modeling software,
 the model may end up scaled incorrectly at this phase. You can use the `transform`
-step to fix this. This step takes no arguments.
+step to fix this. All OBJ and FBX files will be joined into the same file.
+This step takes no arguments.
 
 `preblend`
 
@@ -184,24 +220,19 @@ the builtin physics system (not bullet), and disables sRGB textures due to
 specifics of Toontown use. It takes no arguments, but these things 
 might become configurable later through optional arguments.
 
-`blend2bam`
+* `blend2bam`
 
 ### Bam2Egg
 
 This step will decompile every BAM model into EGG models, which are used
 for processing through other methods. It takes no arguments.
 
-`bam2egg`
+* `bam2egg`
 
 ### Optimize
 
 This step will do the following transformations to every EGG model it finds:
 
-* Remaps texture paths so they work with the desirred directory structure.
-  This requires that the texture paths in the model are flat, i.e. they're
-  relative and point to a file in the same directory. `Blend2Bam` will
-  perform that conversion automatically, but if a different step is used
-  this has to be done separately.
 * Removes the default cube `Cube.N` and camera `Camera` groups from the file
   if they're found inside.
 * Creates a group with the same name as the model name, containing everything
@@ -212,30 +243,24 @@ This function takes one required parameter `profile`. However, the profile
 is currently ignored. In the future, there will be multiple profiles that can
 (for example) run egg-optchar, etc.
 
-`optimize:stiffchar`
-`optimize:actorchar`
-`optimize:prop`
+* `optimize:stiffchar`
+* `optimize:actorchar`
+* `optimize:prop`
 
 ### Transform
 
-This step looks for a file named `transforms.yml` in the input directory.
-It will then apply the given transforms to every egg file it encounters.
-An example file can look like this:
+This step will apply the given transforms to every egg file it encounters.
+Each transform is a combination of scale, rotate, and translate. For example:
 
-```yaml
-- scale: 10
-- rotate: 0,0,180
-- translate: 0,-0.25,1
-```
+* `transform:10:0,0,180:0,-0.25,1`
 
 This will first increase the model scale 10 times, then rotate it 180 degrees
 around the Z axis (functionally setting its H angle to 180), and then translate
 it 1 unit upwards and 0.25 units backwards.
 
-This step takes no arguments. This loading method was chosen to automatically
-support batch processing through Makefiles.
+It is recommended to use the `[]` syntax to load the arguments for this step.
 
-`transform`
+* `transform[]`
 
 ### Collide
 
@@ -258,17 +283,33 @@ This step takes three arguments:
 This step can appear multiple times in the pipeline if one wants to add
 multiple collision solids to different parts of the model. 
 
-`collide`
-`collide:keep,descend:tube`
-`collide:descend:polyset:optimized_geom`
+* `collide`
+* `collide:keep,descend:tube`
+* `collide:descend:polyset:optimized_geom`
+* `collide[]`
+
+### 3D-Palettize
+
+This step is used to join multiple texture files on a 3D model into one palette.
+It will palettize every EGG model in the folder.
+
+This step takes one parameter, the desired texture size. It must be a power
+of two. The default value is 1024, which means each produced palette will be
+1024x1024.
+
+*New in version 1.2.*
+
+* `3d_palettize`
+* `3d_palettize:2048`
 
 ### Egg2Bam
 
 This step is used to assemble the EGG model into the BAM model suitable
-for ingame use. It also copies the model into `built` folder. It takes no
-arguments.
+for ingame use. It also replaces the texture paths in the model, and 
+copies the model and every needed texture into the `built` folder.
+It takes no arguments.
 
-`egg2bam`
+* `egg2bam`
 
 ### Script
 
@@ -276,10 +317,10 @@ This step can be used to run scripts that are not packaged with this project.
 The script will run in the directory including (transformed versions of) all
 assets in the input directory. It will receive the name of the model as its only
 argument. This step includes one parameter with the path to the script. Note that
-due to the specifics of implementation, it has to be the path, but the type
+due to the specifics of implementation, it has to be one file, but the type
 of the script is not limited (shell, python, etc.) as long as it's an executable.
 
-`script:scripts/magic.sh`
+* `script:scripts/magic.sh`
 
 For example, if your directory structure looks like this:
 

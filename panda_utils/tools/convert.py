@@ -12,6 +12,9 @@ logger = logging.getLogger("panda_utils.converter")
 
 
 def copy_single(source_path: pathlib.Path, target_path: pathlib.Path) -> None:
+    if not source_path.exists():
+        return
+
     if target_path.exists() and target_path.stat().st_mtime > source_path.stat().st_mtime:
         return
 

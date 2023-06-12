@@ -5,7 +5,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import yaml
 from panda_utils import util
 from panda_utils.eggtree import eggparse, operations
 from panda_utils.tools.convert import bam2egg, egg2bam
@@ -16,50 +15,35 @@ image_regex = re.compile(r".*\.(jpg|png|rgb)")
 logger = logging.getLogger("panda_utils.pipeline.models")
 
 
-def get_filename_regex(new_name):
-    return re.compile(f"{new_name}(-[0-9]+)?.(jpg|png|rgb)")
+def build_asset_mapper(assets, name):
+    output = {}
+    for counter, item in enumerate(assets):
+        extension = item.split(".")[-1]
+        new_file_name = f"{name}-{counter}.{extension}" if counter else f"{name}.{extension}"
+        output[item] = new_file_name
+    return output
 
 
-def remap_texture_paths(tree, new_name):
-    filename_regex = get_filename_regex(new_name)
-    textures = tree.findall("Texture")
-    remaps = {}
-    counter = 0
-    for texture in textures:
-        texture_name = texture.get_child(0)
-        texture_name_str = texture_name.value
-        if texture_name_str[0] in '"\'':
-            texture_name_str = texture_name_str[1:-1]
-        if not filename_regex.match(texture_name_str):
-            extension = texture_name_str.split(".")[-1]
-            if counter == 0:
-                new_texture_name = f"{new_name}.{extension}"
-            else:
-                new_texture_name = f"{new_name}-{counter}.{extension}"
-            counter += 1
-            remaps[texture_name_str] = new_texture_name
-            texture_name.value = f'"{new_texture_name}"'
-
-    return remaps
+def get_all_textures(filename):
+    textures = []
+    with open(filename) as f:
+        eggtree = eggparse.egg_tokenize(f.readlines())
+    for tex in eggtree.findall("Texture"):
+        textures.append(tex.get_child(0).value)
+    return textures
 
 
 def action_preblend(ctx):
-    count = 0
-    for file in ctx.files:
-        if preblend_regex.match(file):
-            logger.info("%s: Converting to blend: %s", ctx.name, file)
+    all_inputs = [file for file in ctx.files if preblend_regex.match(file)]
+    logger.info("%s: Converting to blend: %s", ctx.name, ", ".join(all_inputs))
 
-            blend_filename = ctx.model_name
-            if count:
-                blend_filename += f"-{count}"
-            blend_filename += ".blend"
-            count += 1
-            subprocess.run(
-                ["blender", "--background", "--python", get_data_file_path("blender/import_model.py"),
-                 "--", file, Path.cwd() / blend_filename],
-                stdout=subprocess.DEVNULL,
-                cwd=ctx.cwd,
-            )
+    blend_filename = f"{ctx.model_name}.blend"
+    subprocess.run(
+        ["blender", "--background", "--python", get_data_file_path("blender/import_model.py"),
+         "--", Path.cwd() / blend_filename, *all_inputs],
+        stdout=subprocess.DEVNULL,
+        cwd=ctx.cwd,
+    )
 
 
 def action_blendrename(ctx):
@@ -109,57 +93,59 @@ def action_bam2egg(ctx):
 def action_optimize(ctx, mechanism):
     logger.info("%s: Using optimization mechanism: %s", ctx.name, mechanism)
 
-    # The main thing we should do is patch the egg paths, thankfully panda-utils does that easily
+    all_eggs = {}
+    textures = set()
     for file in ctx.files:
         if file.endswith(".egg"):
-            logger.info("%s: Optimizing model: %s", ctx.name, file)
             with open(file) as f:
-                data = f.readlines()
+                all_eggs[file] = tree = eggparse.egg_tokenize(f.readlines())
+                for tex in tree.findall("Texture"):
+                    textures.add(eggparse.sanitize_string(tex.get_child(0).value))
 
-            eggtree = eggparse.egg_tokenize(data)
-            renames = remap_texture_paths(eggtree, ctx.model_name)
-            for fnold, fnnew in renames.items():
-                shutil.move(fnold, fnnew)
-                shutil.copy(fnnew, f"{ctx.output_texture}/{fnnew}")
+    texture_mapper = build_asset_mapper(textures, ctx.model_name)
+    for fnold, fnnew in texture_mapper.items():
+        shutil.move(fnold, fnnew)
 
-            # We also need to remove the default cube and the cameras if they're present in the model
-            nodeset = set()
+    for file, eggtree in all_eggs.items():
+        logger.info("%s: Optimizing model: %s", ctx.name, file)
+        # The first thing we should do is patch the texture paths
+        for tex in eggtree.findall("Texture"):
+            tex_node = tex.get_child(0)
+            tex_node.value = texture_mapper[eggparse.sanitize_string(tex_node.value)]
+
+        # We also need to remove the default cube and the cameras if they're present in the model
+        nodeset = set()
+        for node in eggtree.children:
+            if isinstance(node, eggparse.EggBranch) and node.node_type == "Group":
+                if node.node_name == "Camera" or node.node_name.startswith("Cube."):
+                    nodeset.add(node)
+        eggtree.remove_nodes(nodeset)
+
+        # For now we're also going to rename the top node into the model name, even though it's not
+        # strictly correct to do
+        if not any(group for group in eggtree.findall("Group") if group.node_name == ctx.model_name):
+            group_node = eggparse.EggBranch("Group", ctx.model_name, [])
+            removed_children = set()
             for node in eggtree.children:
                 if isinstance(node, eggparse.EggBranch) and node.node_type == "Group":
-                    if node.node_name == "Camera" or node.node_name.startswith("Cube."):
-                        nodeset.add(node)
-            eggtree.remove_nodes(nodeset)
+                    group_node.children.append(node)
+                    removed_children.add(node)
 
-            # For now we're also going to rename the top node into the model name, even though it's not
-            # strictly correct to do
-            if not any(group for group in eggtree.findall("Group") if group.node_name == ctx.model_name):
-                for index, node in enumerate(eggtree.children):
-                    if isinstance(node, eggparse.EggBranch) and node.node_type == "Group":
-                        new_node = eggparse.EggBranch("Group", ctx.model_name, [node])
-                        eggtree.children[index] = new_node
-                        break
+            eggtree.remove_nodes(removed_children)
+            eggtree.children.append(group_node)
 
-            operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
-            with open(file, "w") as f:
-                f.write(str(eggtree))
+        with open(file, "w") as f:
+            f.write(str(eggtree))
 
 
-def action_transform(ctx):
-    if "transforms.yml" in ctx.files:
-        logger.info("%s: Loading transforms", ctx.name)
-        with open("transforms.yml") as f:
-            trdata = yaml.safe_load(f) or []
-    else:
-        return
-
+def action_transform(ctx, scale=None, rotate=None, translate=None):
     for file in ctx.files:
         if file.endswith(".egg"):
             logger.info("%s: Transforming: %s", ctx.name, file)
             options = []
-            for transform in trdata:
-                for key, value in transform.items():
-                    transform_type = {"scale": "TS", "rotate": "TR", "translate": "TT"}[key]
-                    options.append(f"-{transform_type}")
+            for value, transflag in [(scale, "-TS"), (rotate, "-TR"), (translate, "-TT")]:
+                if value:
+                    options.append(transflag)
                     options.append(str(value))
             if options:
                 translated_file_name = f"translated-{file}"
@@ -167,7 +153,7 @@ def action_transform(ctx):
                 os.replace(translated_file_name, file)
 
 
-def action_collide(ctx, flags="keep,descend", method="Sphere", group_name=None):
+def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None):
     group_name = group_name or ctx.model_name
     method = method.capitalize()
     flags = flags.replace(",", " ")
@@ -189,13 +175,59 @@ def action_collide(ctx, flags="keep,descend", method="Sphere", group_name=None):
                 f.write(str(eggtree))
 
 
+def action_3d_palettize(ctx, palette_size="1024"):
+    palette_size = int(palette_size)
+    if palette_size & (palette_size - 1):
+        raise ValueError("The palette size must be a power of two!")
+
+    logger.info("%s: Creating a TXA file...", ctx.name)
+    txa_text = (
+        f":palette {palette_size} {palette_size}\n"
+        ":imagetype png\n"
+        ":powertwo 1\n"
+        f":group {ctx.model_name} dir .\n"
+        f"*.png : force-rgba dual linear clamp_u clamp_v margin 5\n"
+    )
+    with open("textures.txa", "w") as txa_file:
+        txa_file.write(txa_text)
+
+    all_eggs = [file for file in ctx.files if file.endswith(".egg")]
+
+    logger.info("%s: Palettizing %s...", ctx.name, ', '.join(all_eggs))
+    util.run_panda(
+        ctx.putil_ctx,
+        "egg-palettize",
+        "-opt",
+        "-redo",
+        "-nodb",
+        "-inplace",
+        *all_eggs,
+        "-inplace",
+        "-tn",
+        f"{ctx.model_name}_palette_%p_%i",
+        timeout=60,
+    )
+
+
 def action_egg2bam(ctx):
     files = []
     for file in ctx.files:
         if file.endswith(".egg"):
             logger.info("%s: Copying %s into the dist directory", ctx.name, file)
-            shutil.copy(file, f"{ctx.output_model}/{file}")
             files.append(file)
+
+            with open(file) as f:
+                eggtree = eggparse.egg_tokenize(f.readlines())
+            operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
+            for tex in eggtree.findall("Texture"):
+                filename = eggparse.sanitize_string(tex.get_child(0).value).split("/")[-1]
+                shutil.copy(filename, f"{ctx.output_texture}/{filename}")
+
+            with open(file, "w") as f:
+                f.write(str(eggtree))
+
+            shutil.copy(file, f"{ctx.output_model}/{file}")
+
     os.chdir(ctx.output_model)
     os.chdir(ctx.putil_ctx.resources_path)
     ctx.putil_ctx.working_path = ctx.putil_ctx.resources_path

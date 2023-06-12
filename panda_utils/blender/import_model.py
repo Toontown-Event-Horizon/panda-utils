@@ -4,20 +4,19 @@ import sys
 argv = sys.argv
 argv = argv[argv.index("--") + 1:]  # get all arguments after "--"
 
-input_file, output_file = argv
+output_file, *input_files = argv
 
 
 def import_model():
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete(use_global=False)
-    if input_file.endswith("fbx"):
-        bpy.ops.import_scene.fbx(filepath=argv[0])
-    elif input_file.endswith("obj"):
-        bpy.ops.import_scene.obj(filepath=argv[0])
-    else:
-        return
+    for file in input_files:
+        if file.endswith("fbx"):
+            bpy.ops.import_scene.fbx(filepath=file)
+        elif file.endswith("obj"):
+            bpy.ops.import_scene.obj(filepath=file)
 
-    bpy.ops.wm.save_as_mainfile(filepath=argv[1])
+    bpy.ops.wm.save_as_mainfile(filepath=output_file)
 
 
 import_model()
