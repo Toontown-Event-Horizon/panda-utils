@@ -54,14 +54,15 @@ class AssetContext:
             logger.warning("%s: Invalid configured arguments: %s (expected list or dict)", self.name, type(args))
 
 
-def main():
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
-    console.setFormatter(formatter)
-    global_logger = logging.getLogger("")
-    global_logger.setLevel(logging.INFO)
-    global_logger.addHandler(console)
+def main(enable_logging=False):
+    if False and enable_logging:
+        console = logging.StreamHandler()
+        console.setLevel(logging.INFO)
+        formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
+        console.setFormatter(formatter)
+        global_logger = logging.getLogger("")
+        global_logger.setLevel(logging.INFO)
+        global_logger.addHandler(console)
 
     _, input_folder, output_phase, output_folder, *pipeline = sys.argv
     ctx = AssetContext(input_folder, output_phase, output_folder)
@@ -106,4 +107,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(os.getenv("PANDA_UTILS_LOGGING") != "")

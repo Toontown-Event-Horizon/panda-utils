@@ -9,6 +9,28 @@ from panda_utils.eggtree import eggparse
 logger = logging.getLogger("panda_utils.palettize")
 
 
+def remove_palette_indices(egg_path):
+    with open(egg_path) as f:
+        data = f.readlines()
+
+    eggtree = eggparse.egg_tokenize(data)
+    all_groups = eggtree.findall("Group")
+    for group in all_groups:
+        if "-" not in group.node_name:
+            continue
+
+        name_split = group.node_name.split("-", 1)
+        try:
+            int(name_split[0])
+        except ValueError:
+            continue
+        else:
+            group.node_name = name_split[1]
+
+    with open(egg_path, "w") as f:
+        f.write(str(eggtree))
+
+
 def palettize(
     ctx: util.Context, output: str, phase: str, subdir: str, poly: int = None, margin: int = 0, ordered: bool = False
 ) -> None:
@@ -64,25 +86,7 @@ def palettize(
 
     if ordered:
         logger.info("Removing ordering indices from the egg...")
-        with open(egg_path) as f:
-            data = f.readlines()
-
-        eggtree = eggparse.egg_tokenize(data)
-        all_groups = eggtree.findall("Group")
-        for group in all_groups:
-            if "-" not in group.node_name:
-                continue
-
-            name_split = group.node_name.split("-", 1)
-            try:
-                int(name_split[0])
-            except ValueError:
-                continue
-            else:
-                group.node_name = name_split[1]
-
-        with open(egg_path, "w") as f:
-            f.write(str(eggtree))
+        remove_palette_indices(egg_path)
 
     logger.info("Converting to BAM...")
     util.run_panda(ctx, "egg2bam", egg_path, "-o", egg_path.replace(".egg", ".bam"), timeout=10)

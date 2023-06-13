@@ -1,4 +1,4 @@
-# Panda3D Utils v1.2
+# Panda3D Utils v1.2.1
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 
@@ -187,6 +187,9 @@ This method is used for easy interaction with Makefiles (if the input folder
 is set as the makefile dependency, changing this file will cause the task
 building a given asset to be rerun).
 
+The pipeline will normally hide all outputs unless the environmental variable
+`PANDA_UTILS_LOGGING`  is not empty.
+
 The list of all currently existing steps is below.
 
 ### Preblend
@@ -197,6 +200,12 @@ the model may end up scaled incorrectly at this phase. You can use the `transfor
 step to fix this. All OBJ and FBX files will be joined into the same file.
 This step takes no arguments.
 
+**Changelog**
+* 1.2 - now joins all models into the same blend file, instead of making
+  separate blend files per model
+* 1.1 - initial implementation
+
+**Examples**
 `preblend`
 
 ### BlendRename
@@ -205,6 +214,10 @@ This step will rename the BLEND models into their proper name. It is required
 if the input files are in BLEND format, but not required if the Blend files are
 generated through Preblend. This step takes no arguments.
 
+**Changelog**
+* 1.1 - initial implementation
+
+**Examples**
 `blendrename`
 
 ### Blend2Bam
@@ -220,6 +233,10 @@ the builtin physics system (not bullet), and disables sRGB textures due to
 specifics of Toontown use. It takes no arguments, but these things 
 might become configurable later through optional arguments.
 
+**Changelog**
+* 1.1 - initial implementation
+
+**Examples**
 * `blend2bam`
 
 ### Bam2Egg
@@ -227,6 +244,10 @@ might become configurable later through optional arguments.
 This step will decompile every BAM model into EGG models, which are used
 for processing through other methods. It takes no arguments.
 
+**Changelog**
+* 1.1 - initial implementation
+
+**Examples**
 * `bam2egg`
 
 ### Optimize
@@ -238,11 +259,21 @@ This step will do the following transformations to every EGG model it finds:
 * Creates a group with the same name as the model name, containing everything
   inside of the model. This is useful if the Panda3D code is using `find()`
   while loading this model.
+* Renames all textures to follow a consistent naming pattern. For example,
+  if textures `file1.png`, `Randomfile.jpg` and `otherFile.png` are provided,
+  they will be renamed into `input_folder.png`, `input_folder-1.jpg` and
+  `input_folder-2.png` (the order is not guaranteed, but it will be consistent
+  if this step is launched multiple times).
 
 This function takes one required parameter `profile`. However, the profile
 is currently ignored. In the future, there will be multiple profiles that can
 (for example) run egg-optchar, etc.
 
+**Changelog**
+* 1.2 - no longer changes the texture path prefix (now done by egg2bam)
+* 1.1 - initial implementation
+
+**Examples**
 * `optimize:stiffchar`
 * `optimize:actorchar`
 * `optimize:prop`
@@ -260,7 +291,14 @@ it 1 unit upwards and 0.25 units backwards.
 
 It is recommended to use the `[]` syntax to load the arguments for this step.
 
+**Changelog**
+* 1.2 - now is controlled by arguments (`[]` partially restores old behavior)
+* 1.1 - initial implementation
+
+**Examples**
 * `transform[]`
+* `transform:10`
+* `transform::0,0,180`
 
 ### Collide
 
@@ -283,24 +321,93 @@ This step takes three arguments:
 This step can appear multiple times in the pipeline if one wants to add
 multiple collision solids to different parts of the model. 
 
+**Changelog**
+* 1.1 - initial implementation
+
+**Examples**
 * `collide`
 * `collide:keep,descend:tube`
 * `collide:descend:polyset:optimized_geom`
 * `collide[]`
 
-### 3D-Palettize
+### Downscale
 
-This step is used to join multiple texture files on a 3D model into one palette.
+This step is used to resize one texture or all PNG textures in the folder
+to a given size. Installing `Pillow` is required for this step (provided
+by the `imagery` extra).
+
+This step accepts up to four arguments.
+* The first argument `size` is required. The desired texture size, which has
+  to be a power-of-two. All affected textures will be resized to `size*size`.
+* The second parameter `bbox` is optional. If it is not present, the textures
+  will be resized as-is. If it is present, all textures will be first cropped
+  to their bounding box before resizing, with `bbox%` padding around the
+  bounding box. For example, setting `bbox=10` will use 10/12th of each
+  dimension for the source image, and 1/12th of each dimension on each side
+  for the padding.
+* The third parameter `flags` is optional. It includes zero or more words
+  separated by commas, defaults to no flags:
+  * `truecenter`: By default, textures with big width and small height will be
+    pinned to the bottom of the image. Setting this flag will instead center
+    those textures in the image. This flag does not affect the textures with
+    small width and big height, which will always be centered.
+* The fourth argument `name` is optional, and defaults to
+  an empty string. If name is empty, all textures will be resized, if name is 
+  not empty, only the texture matching the given name will be resized. 
+  This accepts Unix-style patterns (i.e. `background-*.png`).
+
+**Changelog**
+* 1.2.1 - initial implementation
+
+**Examples**
+* `downscale:256`
+* `downscale:256:10`
+* `downscale:256::truecenter:background-*.png`
+* `downscale[]`
+
+### Texture Cards
+
+This step is used to create an EGG model out of a set of png/jpg files.
+It is usually used to combine multiple related 2D images/icons together.
+It is recommended to do `downscale` before this step, and `palettize` after
+this step, but not required.
+
+By default, all parts of the model will occupy the 1x1 unit square when loaded
+in Panda3D. This is usually desired for assets such as icons, but not desired
+for assets with variable sizes or non-uniform aspect ratio, such as GUI 
+elements. In those cases, texture-cards can accept an argument for the size
+of each model, which should be an integer (usually power-of-two). For example,
+if this argument is set to `512`, 256x256 textures will have the Panda3D
+size 0.5x0.5, and 128x1024 textures will have the size 0.25x2.
+
+**Changelog**
+* 1.2.1 - initial implementation
+
+**Examples**
+* `texture_cards`
+* `texture_cards:512`
+
+### Palettize
+
+This step is used to join multiple texture files on a model into one palette.
 It will palettize every EGG model in the folder.
 
-This step takes one parameter, the desired texture size. It must be a power
-of two. The default value is 1024, which means each produced palette will be
-1024x1024.
+This step takes up to two parameters. The first parameter is required: the
+desired texture size. It must be a power of two. The default value is 1024,
+which means each produced palette will be 1024x1024.
 
-*New in version 1.2.*
+The second parameter is optional and includes zero or more comma-separated
+words, defaults to empty:
+* `ordered` - if the palettized images were named `{number}-{name}`, changes
+  the palettized node name to `name`. Primarily used with texture-cards stage.
 
-* `3d_palettize`
-* `3d_palettize:2048`
+**Changelog**
+* 1.2.1 - renamed from `3d_palettize` to `palettize`, added `ordered` flag
+* 1.2 - initial implementation
+
+**Examples**
+* `palettize`
+* `palettize:2048`
 
 ### Egg2Bam
 
@@ -309,6 +416,11 @@ for ingame use. It also replaces the texture paths in the model, and
 copies the model and every needed texture into the `built` folder.
 It takes no arguments.
 
+**Changelog**
+* 1.2 - now also patches the texture paths (before, this was done by optimize)
+* 1.1 - initial implementation
+
+**Examples**
 * `egg2bam`
 
 ### Script
@@ -320,6 +432,10 @@ argument. This step includes one parameter with the path to the script. Note tha
 due to the specifics of implementation, it has to be one file, but the type
 of the script is not limited (shell, python, etc.) as long as it's an executable.
 
+**Changelog**
+* 1.1 - initial implementation
+
+**Examples**
 * `script:scripts/magic.sh`
 
 For example, if your directory structure looks like this:
@@ -342,5 +458,4 @@ python -m panda_utils.assetpipeline inputs/asset_name asset char script:scripts/
 ## Future plans
 * Reverse palettizing based on the image coordinates
 * Automatic decimation in the Asset Pipeline for collision purposes
-* Addition of palettize functionality into the Asset Pipeline
 * Addition of toon head functionality into the Asset Pipeline

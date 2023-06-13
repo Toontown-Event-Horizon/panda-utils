@@ -8,10 +8,10 @@ from pathlib import Path
 from panda_utils import util
 from panda_utils.eggtree import eggparse, operations
 from panda_utils.tools.convert import bam2egg, egg2bam
+from panda_utils.tools.palettize import remove_palette_indices
 from panda_utils.util import get_data_file_path
 
 preblend_regex = re.compile(r".*\.(fbx|obj)")
-image_regex = re.compile(r".*\.(jpg|png|rgb)")
 logger = logging.getLogger("panda_utils.pipeline.models")
 
 
@@ -175,10 +175,12 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None):
                 f.write(str(eggtree))
 
 
-def action_3d_palettize(ctx, palette_size="1024"):
+def action_palettize(ctx, palette_size="1024", flags=""):
     palette_size = int(palette_size)
     if palette_size & (palette_size - 1):
         raise ValueError("The palette size must be a power of two!")
+
+    flag_list = flags.split(",")
 
     logger.info("%s: Creating a TXA file...", ctx.name)
     txa_text = (
@@ -207,6 +209,10 @@ def action_3d_palettize(ctx, palette_size="1024"):
         f"{ctx.model_name}_palette_%p_%i",
         timeout=60,
     )
+
+    if "ordered" in flag_list:
+        for file in all_eggs:
+            remove_palette_indices(file)
 
 
 def action_egg2bam(ctx):
