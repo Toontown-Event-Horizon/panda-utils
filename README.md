@@ -1,4 +1,4 @@
-# Panda3D Utils v1.2.1
+# Panda3D Utils v1.3
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 
@@ -256,27 +256,88 @@ This step will do the following transformations to every EGG model it finds:
 
 * Removes the default cube `Cube.N` and camera `Camera` groups from the file
   if they're found inside.
-* Creates a group with the same name as the model name, containing everything
-  inside of the model. This is useful if the Panda3D code is using `find()`
-  while loading this model.
 * Renames all textures to follow a consistent naming pattern. For example,
   if textures `file1.png`, `Randomfile.jpg` and `otherFile.png` are provided,
   they will be renamed into `input_folder.png`, `input_folder-1.jpg` and
   `input_folder-2.png` (the order is not guaranteed, but it will be consistent
   if this step is launched multiple times).
 
-This function takes one required parameter `profile`. However, the profile
-is currently ignored. In the future, there will be multiple profiles that can
-(for example) run egg-optchar, etc.
+This function takes no parameters.
 
 **Changelog**
+* 1.3 - no longer takes parameters, no longer sets model parents
+  (see: `model_parent`)
 * 1.2 - no longer changes the texture path prefix (now done by egg2bam)
 * 1.1 - initial implementation
 
 **Examples**
-* `optimize:stiffchar`
-* `optimize:actorchar`
-* `optimize:prop`
+* `optimize`
+
+### Model Parent
+This step creates a group with the same name as the model name, containing
+the entire model inside itself. This can be useful if the Panda3D code is using
+`find()` while loading this model.
+
+This step takes no parameters.
+
+**Changelog**
+* 1.3 - initial implementation
+
+*Examples**
+* `model_parent`
+
+### Group rename
+This step renames all collections with the given name into a different name.
+
+This step uses keyword arguments, which means it can only be run through `[]`.
+Setting a name to `__delete__` will delete the node. For example:
+
+```yaml
+group_rename:
+  hands.003: hands
+  useless-node: __delete__
+```
+
+**Changelog**
+* 1.3 - initial implementation
+
+*Examples**
+* `group_rename[]`
+
+### Group remove
+This step removes all collections with the given name. Unlike group rename,
+allows using fnmatch syntax to find the collections.
+
+Accepts one argument equal to the fnmatch pattern that is removed. Can be
+run multiple times if desired.
+
+```yaml
+group_rename:
+  hands.003: hands
+  useless-node: __delete__
+```
+
+**Changelog**
+* 1.3 - initial implementation
+
+*Examples**
+* `group_remove[]`
+* `group_remove:*useless*`
+
+### Optchar
+This step runs `egg-optchar`, setting the exposed joints and the flagged nodes.
+Note that changing the dart is currently not supported.
+
+This model takes two parameters. Both of them can be comma-separated strings,
+or lists of strings (only if the `[]` syntax is used). The first parameter is
+the flagged nodes, the second parameter is the exposed joints.
+
+**Changelog**
+* 1.3 - initial implementation
+
+**Examples**
+* `optchar[]`
+* `optchar:this-node-has-texture-set:joint_whatever`
 
 ### Transform
 

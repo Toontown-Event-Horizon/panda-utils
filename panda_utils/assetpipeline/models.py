@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import os
 import re
@@ -90,9 +91,7 @@ def action_bam2egg(ctx):
             bam2egg(ctx.putil_ctx, file)
 
 
-def action_optimize(ctx, mechanism):
-    logger.info("%s: Using optimization mechanism: %s", ctx.name, mechanism)
-
+def action_optimize(ctx):
     all_eggs = {}
     textures = set()
     for file in ctx.files:
@@ -121,8 +120,18 @@ def action_optimize(ctx, mechanism):
                     nodeset.add(node)
         eggtree.remove_nodes(nodeset)
 
-        # For now we're also going to rename the top node into the model name, even though it's not
-        # strictly correct to do
+        with open(file, "w") as f:
+            f.write(str(eggtree))
+
+
+def action_model_parent(ctx):
+    for file in ctx.files:
+        if not file.endswith(".egg"):
+            continue
+
+        with open(file) as f:
+            eggtree = eggparse.egg_tokenize(f.readlines())
+
         if not any(group for group in eggtree.findall("Group") if group.node_name == ctx.model_name):
             group_node = eggparse.EggBranch("Group", ctx.model_name, [])
             removed_children = set()
@@ -213,6 +222,62 @@ def action_palettize(ctx, palette_size="1024", flags=""):
     if "ordered" in flag_list:
         for file in all_eggs:
             remove_palette_indices(file)
+
+
+def action_optchar(ctx, flags, expose):
+    if isinstance(flags, str):
+        flags = flags.split(",")
+    if isinstance(expose, str):
+        expose = expose.split(",")
+
+    for file in ctx.files:
+        if file.endswith(".egg"):
+            command = ["egg-optchar", file, "-inplace", "-keepall"]
+
+            for flag in flags:
+                command.append("-flag")
+                command.append(flag)
+
+            for joint in expose:
+                command.append("-expose")
+                command.append(joint)
+
+            util.run_panda(ctx.putil_ctx, *command)
+
+
+def action_group_rename(ctx, **kwargs):
+    for file in ctx.files:
+        if file.endswith(".egg"):
+            with open(file) as f:
+                tree = eggparse.egg_tokenize(f.readlines())
+
+            removals = set()
+            for group in tree.findall("Group"):
+                if new_name := kwargs.get(group.node_name):
+                    if new_name == "__delete__":
+                        removals.add(group)
+                    else:
+                        group.node_name = new_name
+
+            tree.remove_nodes(removals)
+            with open(file, "w") as f:
+                f.write(str(tree))
+
+
+def action_group_remove(ctx, pattern):
+    for file in ctx.files:
+        if file.endswith(".egg"):
+            with open(file) as f:
+                tree = eggparse.egg_tokenize(f.readlines())
+
+            removals = set()
+            for group in tree.findall("Group"):
+                if fnmatch.fnmatch(group.node_name, pattern):
+                    removals.add(group)
+
+            tree.remove_nodes(removals)
+            with open(file, "w") as f:
+                f.write(str(tree))
 
 
 def action_egg2bam(ctx):
