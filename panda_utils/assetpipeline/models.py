@@ -18,7 +18,7 @@ logger = logging.getLogger("panda_utils.pipeline.models")
 
 def build_asset_mapper(assets, name):
     output = {}
-    for counter, item in enumerate(assets):
+    for counter, item in enumerate(sorted(assets)):
         extension = item.split(".")[-1]
         new_file_name = f"{name}-{counter}.{extension}" if counter else f"{name}.{extension}"
         output[item] = new_file_name
