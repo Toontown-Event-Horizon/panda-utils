@@ -32,7 +32,7 @@ class AssetContext:
 
     @property
     def files(self):
-        return os.listdir()
+        return sorted(os.listdir())
 
     def run_action_through_config(self, action, name):
         if YAML_CONFIG_FILENAME not in self.files:
@@ -55,7 +55,7 @@ class AssetContext:
 
 
 def main(enable_logging=False):
-    if False and enable_logging:
+    if enable_logging:
         console = logging.StreamHandler()
         console.setLevel(logging.INFO)
         formatter = logging.Formatter("%(name)-12s: %(levelname)-8s %(message)s")
@@ -107,4 +107,4 @@ def main(enable_logging=False):
 
 
 if __name__ == "__main__":
-    main(os.getenv("PANDA_UTILS_LOGGING") != "")
+    main(bool(os.getenv("PANDA_UTILS_LOGGING")))
