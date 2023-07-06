@@ -73,7 +73,7 @@ def action_blend2bam(ctx):
             logger.info("%s: Converting to bam: %s", ctx.name, file)
             bam_filename = file[:-5] + "bam"
             res = subprocess.run(["blend2bam", "--no-srgb", file, bam_filename],
-                                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, cwd=ctx.cwd)
             err = res.stderr.decode("utf-8")
             if err and "KeyError: 'nodes'" in err:
                 logger.error("%s: Blender output an empty model, aborting.", ctx.name)
@@ -179,6 +179,14 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None):
                 logger.info("Found the named group!")
                 new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
                 groups[0].children.children.insert(0, new_node)
+
+                # Fun fact: Setting <Collide> polyset if the group has non-poly objects will cause a segfault
+                # when the egg file is read. So we have to delete every object that's not a polygon.
+                if method == "Polyset":
+                    nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
+                    if nodes:
+                        logger.warning("Found non-polygon objects while generating collisions, removing...")
+                        groups[0].remove_nodes(set(nodes))
 
             with open(file, "w") as f:
                 f.write(str(eggtree))
