@@ -124,6 +124,26 @@ def action_optimize(ctx):
             f.write(str(eggtree))
 
 
+def action_transparent(ctx):
+    for file in ctx.files:
+        if file.endswith(".egg"):
+            logger.info("%s: Adding transparency to: %s", ctx.name, file)
+            with open(file) as f:
+                data = f.readlines()
+
+            eggtree = eggparse.egg_tokenize(data)
+            new_node = eggparse.EggLeaf("Scalar", "alpha", "dual")
+            for tex in eggtree.findall("Texture"):
+                for child in tex.children:
+                    if child.equals(new_node):
+                        break
+                else:
+                    tex.add_child(new_node)
+
+            with open(file, "w") as f:
+                f.write(str(eggtree))
+
+
 def action_model_parent(ctx):
     for file in ctx.files:
         if not file.endswith(".egg"):
@@ -162,6 +182,28 @@ def action_transform(ctx, scale=None, rotate=None, translate=None):
                 os.replace(translated_file_name, file)
 
 
+def action_rmmat(ctx):
+    for file in ctx.files:
+        if file.endswith(".egg"):
+            logger.info("%s: Removing materials from: %s", ctx.name, file)
+            with open(file) as f:
+                data = f.readlines()
+
+            eggtree = eggparse.egg_tokenize(data)
+            nodes_for_removal = (
+                eggtree.findall("Material")
+                + eggtree.findall("MRef")
+                + [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
+            )
+            eggtree.remove_nodes(set(nodes_for_removal))
+
+            for uv in eggtree.findall("UV"):
+                uv.node_name = None
+
+            with open(file, "w") as f:
+                f.write(str(eggtree))
+
+
 def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, bitmask=None):
     group_name = group_name or ctx.model_name
     method = method.capitalize()
@@ -194,8 +236,8 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, 
                     logger.warning("Found non-polygon objects while generating collisions, removing...")
                     groups[0].remove_nodes(set(nodes))
 
-            with open(file, "w") as f:
-                f.write(str(eggtree))
+                with open(file, "w") as f:
+                    f.write(str(eggtree))
 
 
 def action_palettize(ctx, palette_size="1024", flags=""):

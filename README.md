@@ -1,4 +1,4 @@
-# Panda3D Utils v1.3.2
+# Panda3D Utils v1.3.3
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 
@@ -164,8 +164,10 @@ in the asset input directory. It is parsed as follows:
 * If that field is not present, or the file is not present, the step has
   no effect.
 * If the field is a dictionary, it will be applied as keyword arguments.
-* If the field is a list, the step will be applied once for each dictionary
-  inside of it in the proper order.
+* If the field is a string, it will be applied as the only positional argument.
+  *New in version 1.3.3.*
+* If the field is a list, the step will be applied once for each item
+  inside of it in the proper order. This is not recursive.
 
 This sounds confusing, so here's an example of such a config file:
 
@@ -177,12 +179,16 @@ collide:
   flags: keep,descend
   method: polyset
   group_name: optimized
+random_action: group2
 ```
 
 When a `transform[]` action is encountered, two transform steps will be called
 in order, first the node will be rescaled, and then it will be rotated.
 When a `collide[]` action is encountered, it will be called once with the given
-arguments. If a different `[]` action is encountered, it will not run.
+arguments.
+When a `random_action[]` action is encountered, it will be called once with the
+argument `group2`.
+If a different `[]` action is encountered, it will not run.
 This method is used for easy interaction with Makefiles (if the input folder 
 is set as the makefile dependency, changing this file will cause the task
 building a given asset to be rerun).
@@ -206,7 +212,7 @@ This step takes no arguments.
 * 1.1 - initial implementation
 
 **Examples**
-`preblend`
+* `preblend`
 
 ### BlendRename
 
@@ -218,7 +224,7 @@ generated through Preblend. This step takes no arguments.
 * 1.1 - initial implementation
 
 **Examples**
-`blendrename`
+* `blendrename`
 
 ### Blend2Bam
 
@@ -283,7 +289,7 @@ This step takes no parameters.
 **Changelog**
 * 1.3 - initial implementation
 
-*Examples**
+**Examples**
 * `model_parent`
 
 ### Group rename
@@ -301,7 +307,7 @@ group_rename:
 **Changelog**
 * 1.3 - initial implementation
 
-*Examples**
+**Examples**
 * `group_rename[]`
 
 ### Group remove
@@ -320,7 +326,7 @@ group_rename:
 **Changelog**
 * 1.3 - initial implementation
 
-*Examples**
+**Examples**
 * `group_remove[]`
 * `group_remove:*useless*`
 
@@ -393,6 +399,34 @@ multiple collision solids to different parts of the model.
 * `collide:keep,descend:tube`
 * `collide:descend:polyset:optimized_geom`
 * `collide[]`
+
+### Remove Materials
+
+This step removes all materials and UV maps from the models. This is needed
+to export certain actors, and things like toon heads. You should not use
+this step unless you know what you're doing. It accepts no parameters.
+
+Note that applying this step before `palettize` will not have any effect.
+
+**Changelog**
+* 1.3.3 - initial implementation
+
+**Examples**
+* `rmmat`
+
+### Transparent
+
+This step makes all textures in the model semitransparent by adding
+`<Scalar> alpha { dual }` to all of them. You should not use this unless you
+get transparency-related rendering issues. It accepts no parameters.
+
+Note that applying this step before `palettize` will not have any effect.
+
+**Changelog**
+* 1.3.3 - initial implementation
+
+**Examples**
+* `transparent`
 
 ### Downscale
 

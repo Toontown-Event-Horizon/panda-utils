@@ -45,13 +45,19 @@ class AssetContext:
             return
 
         args = data[name]
+        if isinstance(args, list):
+            for kwargs in args:
+                self.run_action(action, kwargs)
+        else:
+            self.run_action(action, args)
+
+    def run_action(self, action, args):
         if isinstance(args, dict):
             action(self, **args)
-        elif isinstance(args, list):
-            for kwargs in args:
-                action(self, **kwargs)
+        elif isinstance(args, str):
+            action(self, args)
         else:
-            logger.warning("%s: Invalid configured arguments: %s (expected list or dict)", self.name, type(args))
+            logger.warning("%s: Invalid configured arguments: %s (expected dict, or str)", self.name, type(args))
 
 
 def main(enable_logging=False):
