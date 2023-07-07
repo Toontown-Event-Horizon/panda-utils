@@ -162,7 +162,7 @@ def action_transform(ctx, scale=None, rotate=None, translate=None):
                 os.replace(translated_file_name, file)
 
 
-def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None):
+def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, bitmask=None):
     group_name = group_name or ctx.model_name
     method = method.capitalize()
     flags = flags.replace(",", " ")
@@ -178,15 +178,21 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None):
             if len(groups) == 1:
                 logger.info("Found the named group!")
                 new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
-                groups[0].children.children.insert(0, new_node)
+                group_children = groups[0].children.children
+                group_children.insert(0, new_node)
 
-                # Fun fact: Setting <Collide> polyset if the group has non-poly objects will cause a segfault
+                if bitmask is not None:
+                    mask_hex = f"{bitmask:#010x}"
+                    bitmask_node = eggparse.EggLeaf("Scalar", "collide-mask", mask_hex)
+                    group_children.insert(1, bitmask_node)
+
+                # Fun fact: Setting <Collide> if the group has non-poly objects will cause a segfault
                 # when the egg file is read. So we have to delete every object that's not a polygon.
-                if method == "Polyset":
-                    nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
-                    if nodes:
-                        logger.warning("Found non-polygon objects while generating collisions, removing...")
-                        groups[0].remove_nodes(set(nodes))
+                # https://github.com/panda3d/panda3d/issues/1515
+                nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
+                if nodes:
+                    logger.warning("Found non-polygon objects while generating collisions, removing...")
+                    groups[0].remove_nodes(set(nodes))
 
             with open(file, "w") as f:
                 f.write(str(eggtree))

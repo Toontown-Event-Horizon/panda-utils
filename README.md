@@ -1,4 +1,4 @@
-# Panda3D Utils v1.3
+# Panda3D Utils v1.3.2
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 
@@ -370,19 +370,22 @@ geometry for complex shapes. Note that adding Polyset collisions is
 computationally expensive for the players of the game and having a decimated
 model for polysets is recommended.
 
-This step takes three arguments:
+This step takes up to four arguments:
 * `flags`: comma-separated list of Egg collision flags. Defaults to `keep,descend`.
 * `method`: lowercase type of the collider (sphere, polyset, etc.)
   Defaults to `sphere`, which is undesired in most cases.
 * `group_name`: If supplied, the collision will be added to a node with
   the given name. If not supplied (default), the collision will be added
   to a node with the name = input_folder's name (this group is automatically
-  created by the optimize step).
+  created by the `model_parent` step or can be made manually).
+* `bitmask`: If supplied, uses a non-standard collide bitmask.
 
 This step can appear multiple times in the pipeline if one wants to add
 multiple collision solids to different parts of the model. 
 
 **Changelog**
+* 1.3.2 - support for collide bitmasks
+* 1.3.1 - no longer causes segmentation fault if the group has Lines
 * 1.1 - initial implementation
 
 **Examples**
