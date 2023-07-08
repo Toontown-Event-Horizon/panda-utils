@@ -1,3 +1,4 @@
+import distutils.spawn
 import importlib.resources
 import logging
 import os
@@ -28,8 +29,8 @@ class Context:
     def from_config(cls, cfg: dict) -> "Context":
         obj = cls()
         obj.working_path = os.getcwd()
-        paths = cfg.get("paths", {})
-        obj.resources_path = paths.get("resources")
+        cfg_paths = cfg.get("paths", {})
+        obj.resources_path = cfg_paths.get("resources")
         if not obj.resources_path:
             raise ValueError("The config requires setting paths.resources!")
 
@@ -42,13 +43,15 @@ class Context:
                 pathlib.Path(python_path, "egg-trans.exe"),
                 pathlib.Path(python_path, "bin", "egg-trans"),
                 pathlib.Path(python_path, "bin", "egg-trans.exe"),
+                pathlib.Path(python_path, "..", "bin", "egg-trans"),
+                pathlib.Path(python_path, "..", "bin", "egg-trans.exe"),
             ]
             for path in paths:
-                if path:
+                if path.exists():
                     obj.panda_path = str(path.parent)
                     break
         if not obj.panda_path:
-            obj.panda_path = paths.get("panda")
+            obj.panda_path = cfg_paths.get("panda")
         if not obj.panda_path:
             raise ValueError("Panda3D was not found on the search path!")
         return obj
@@ -62,9 +65,27 @@ def get_file_list(init_path: str, base_path: str) -> List[str]:
     return [file for file in os.listdir(path) if os.path.isfile(f"{path}/{file}")]
 
 
+def choose_binary(*filename):
+    filename = os.path.sep.join(filename)
+    path = pathlib.Path(filename)
+    if path.is_absolute():
+        if path.exists():
+            return filename
+        exe_filename = filename + ".exe"
+        if pathlib.Path(exe_filename).exists():
+            return exe_filename
+        raise RuntimeError(f"Unable to find binary (installation issue): {filename}")
+    elif path := distutils.spawn.find_executable(filename):
+        return path
+    elif path := distutils.spawn.find_executable(filename + ".exe"):
+        return path
+    else:
+        raise RuntimeError(f"Unable to find binary (not on PATH): {filename}")
+
+
 def run_panda(ctx: Context, command: str, *args: str, timeout: int = 10, debug: bool = False) -> str:
     process = subprocess.Popen(
-        [f"{ctx.panda_path}/{command}", *args], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
+        [choose_binary(ctx.panda_path, command), *args], stdout=subprocess.DEVNULL, stderr=subprocess.PIPE
     )
     out = process.communicate(timeout=timeout)
     bts = out[1] if isinstance(out, tuple) else out
