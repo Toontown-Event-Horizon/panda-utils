@@ -1,4 +1,4 @@
-# Panda3D Utils v1.3.3
+# Panda3D Utils v1.3.4
  
 This repository includes multiple tools for some basic Panda3D automation. Written in Python.
 

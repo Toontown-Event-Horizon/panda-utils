@@ -25,22 +25,13 @@ def build_asset_mapper(assets, name):
     return output
 
 
-def get_all_textures(filename):
-    textures = []
-    with open(filename) as f:
-        eggtree = eggparse.egg_tokenize(f.readlines())
-    for tex in eggtree.findall("Texture"):
-        textures.append(tex.get_child(0).value)
-    return textures
-
-
 def action_preblend(ctx):
     all_inputs = [file for file in ctx.files if preblend_regex.match(file)]
     logger.info("%s: Converting to blend: %s", ctx.name, ", ".join(all_inputs))
 
     blend_filename = f"{ctx.model_name}.blend"
     subprocess.run(
-        ["blender", "--background", "--python", get_data_file_path("blender/import_model.py"),
+        [util.choose_binary("blender"), "--background", "--python", get_data_file_path("blender/import_model.py"),
          "--", Path.cwd() / blend_filename, *all_inputs],
         stdout=subprocess.DEVNULL,
         cwd=ctx.cwd,
@@ -65,7 +56,8 @@ def action_blend2bam(ctx):
             logger.info("%s: Patching texture paths: %s", ctx.name, file)
             full_path = f"{ctx.cwd}/{file}"
             subprocess.run(
-                ["blender", full_path, "--background", "--python", get_data_file_path("blender/patch_paths.py")],
+                [util.choose_binary("blender"), full_path, "--background",
+                 "--python", get_data_file_path("blender/patch_paths.py")],
                 stdout=subprocess.DEVNULL,
                 cwd=ctx.cwd,
             )
@@ -92,20 +84,17 @@ def action_bam2egg(ctx):
 
 
 def action_optimize(ctx):
-    all_eggs = {}
     textures = set()
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            with open(file) as f:
-                all_eggs[file] = tree = eggparse.egg_tokenize(f.readlines())
-                for tex in tree.findall("Texture"):
-                    textures.add(eggparse.sanitize_string(tex.get_child(0).value))
+    ctx.cache_eggs()
+    for tree in ctx.eggs.values():
+        for tex in tree.findall("Texture"):
+            textures.add(eggparse.sanitize_string(tex.get_child(0).value))
 
     texture_mapper = build_asset_mapper(textures, ctx.model_name)
     for fnold, fnnew in texture_mapper.items():
         shutil.move(fnold, fnnew)
 
-    for file, eggtree in all_eggs.items():
+    for file, eggtree in ctx.eggs.items():
         logger.info("%s: Optimizing model: %s", ctx.name, file)
         # The first thing we should do is patch the texture paths
         for tex in eggtree.findall("Texture"):
@@ -120,38 +109,23 @@ def action_optimize(ctx):
                     nodeset.add(node)
         eggtree.remove_nodes(nodeset)
 
-        with open(file, "w") as f:
-            f.write(str(eggtree))
-
 
 def action_transparent(ctx):
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            logger.info("%s: Adding transparency to: %s", ctx.name, file)
-            with open(file) as f:
-                data = f.readlines()
-
-            eggtree = eggparse.egg_tokenize(data)
-            new_node = eggparse.EggLeaf("Scalar", "alpha", "dual")
-            for tex in eggtree.findall("Texture"):
-                for child in tex.children:
-                    if child.equals(new_node):
-                        break
-                else:
-                    tex.add_child(new_node)
-
-            with open(file, "w") as f:
-                f.write(str(eggtree))
+    ctx.cache_eggs()
+    for file, tree in ctx.eggs.items():
+        logger.info("%s: Adding transparency to: %s", ctx.name, file)
+        new_node = eggparse.EggLeaf("Scalar", "alpha", "dual")
+        for tex in tree.findall("Texture"):
+            for child in tex.children:
+                if child.equals(new_node):
+                    break
+            else:
+                tex.add_child(new_node)
 
 
 def action_model_parent(ctx):
-    for file in ctx.files:
-        if not file.endswith(".egg"):
-            continue
-
-        with open(file) as f:
-            eggtree = eggparse.egg_tokenize(f.readlines())
-
+    ctx.cache_eggs()
+    for eggtree in ctx.eggs.values():
         if not any(group for group in eggtree.findall("Group") if group.node_name == ctx.model_name):
             group_node = eggparse.EggBranch("Group", ctx.model_name, [])
             removed_children = set()
@@ -163,11 +137,9 @@ def action_model_parent(ctx):
             eggtree.remove_nodes(removed_children)
             eggtree.children.append(group_node)
 
-        with open(file, "w") as f:
-            f.write(str(eggtree))
-
 
 def action_transform(ctx, scale=None, rotate=None, translate=None):
+    ctx.uncache_eggs()
     for file in ctx.files:
         if file.endswith(".egg"):
             logger.info("%s: Transforming: %s", ctx.name, file)
@@ -183,64 +155,50 @@ def action_transform(ctx, scale=None, rotate=None, translate=None):
 
 
 def action_rmmat(ctx):
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            logger.info("%s: Removing materials from: %s", ctx.name, file)
-            with open(file) as f:
-                data = f.readlines()
+    ctx.cache_eggs()
+    for file, eggtree in ctx.eggs.items():
+        logger.info("%s: Removing materials from: %s", ctx.name, file)
+        nodes_for_removal = (
+            eggtree.findall("Material")
+            + eggtree.findall("MRef")
+            + [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
+        )
+        eggtree.remove_nodes(set(nodes_for_removal))
 
-            eggtree = eggparse.egg_tokenize(data)
-            nodes_for_removal = (
-                eggtree.findall("Material")
-                + eggtree.findall("MRef")
-                + [scalar for scalar in eggtree.findall("Scalar") if scalar.node_name == "uv-name"]
-            )
-            eggtree.remove_nodes(set(nodes_for_removal))
-
-            for uv in eggtree.findall("UV"):
-                uv.node_name = None
-
-            with open(file, "w") as f:
-                f.write(str(eggtree))
+        for uv in eggtree.findall("UV"):
+            uv.node_name = None
 
 
 def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, bitmask=None):
     group_name = group_name or ctx.model_name
     method = method.capitalize()
     flags = flags.replace(",", " ")
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            logger.info("%s: Adding collisions to %s: flags=%s method=%s", ctx.name, file, flags, method)
+    ctx.cache_eggs()
+    for file, eggtree in ctx.eggs.items():
+        logger.info("%s: Adding collisions to %s/%s: flags=%s method=%s", ctx.name, file, group_name, flags, method)
+        groups = [group for group in eggtree.findall("Group") if group.node_name == group_name]
+        if len(groups) == 1:
+            logger.info("Found the named group!")
+            new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
+            group_children = groups[0].children.children
+            group_children.insert(0, new_node)
 
-            with open(file) as f:
-                data = f.readlines()
+            if bitmask is not None:
+                mask_hex = f"{bitmask:#010x}"
+                bitmask_node = eggparse.EggLeaf("Scalar", "collide-mask", mask_hex)
+                group_children.insert(1, bitmask_node)
 
-            eggtree = eggparse.egg_tokenize(data)
-            groups = [group for group in eggtree.findall("Group") if group.node_name == group_name]
-            if len(groups) == 1:
-                logger.info("Found the named group!")
-                new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
-                group_children = groups[0].children.children
-                group_children.insert(0, new_node)
-
-                if bitmask is not None:
-                    mask_hex = f"{bitmask:#010x}"
-                    bitmask_node = eggparse.EggLeaf("Scalar", "collide-mask", mask_hex)
-                    group_children.insert(1, bitmask_node)
-
-                # Fun fact: Setting <Collide> if the group has non-poly objects will cause a segfault
-                # when the egg file is read. So we have to delete every object that's not a polygon.
-                # https://github.com/panda3d/panda3d/issues/1515
-                nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
-                if nodes:
-                    logger.warning("Found non-polygon objects while generating collisions, removing...")
-                    groups[0].remove_nodes(set(nodes))
-
-                with open(file, "w") as f:
-                    f.write(str(eggtree))
+            # Fun fact: Setting <Collide> if the group has non-poly objects will cause a segfault
+            # when the egg file is read. So we have to delete every object that's not a polygon.
+            # https://github.com/panda3d/panda3d/issues/1515
+            nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
+            if nodes:
+                logger.warning("Found non-polygon objects while generating collisions, removing...")
+                groups[0].remove_nodes(set(nodes))
 
 
 def action_palettize(ctx, palette_size="1024", flags=""):
+    ctx.uncache_eggs()
     palette_size = int(palette_size)
     if palette_size & (palette_size - 1):
         raise ValueError("The palette size must be a power of two!")
@@ -281,6 +239,7 @@ def action_palettize(ctx, palette_size="1024", flags=""):
 
 
 def action_optchar(ctx, flags, expose):
+    ctx.uncache_eggs()
     if isinstance(flags, str):
         flags = flags.split(",")
     if isinstance(expose, str):
@@ -302,57 +261,46 @@ def action_optchar(ctx, flags, expose):
 
 
 def action_group_rename(ctx, **kwargs):
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            with open(file) as f:
-                tree = eggparse.egg_tokenize(f.readlines())
+    ctx.cache_eggs()
+    for tree in ctx.eggs.values():
+        removals = set()
+        for group in tree.findall("Group"):
+            if new_name := kwargs.get(group.node_name):
+                if new_name == "__delete__":
+                    removals.add(group)
+                else:
+                    group.node_name = new_name
 
-            removals = set()
-            for group in tree.findall("Group"):
-                if new_name := kwargs.get(group.node_name):
-                    if new_name == "__delete__":
-                        removals.add(group)
-                    else:
-                        group.node_name = new_name
-
-            tree.remove_nodes(removals)
-            with open(file, "w") as f:
-                f.write(str(tree))
+        tree.remove_nodes(removals)
 
 
 def action_group_remove(ctx, pattern):
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            with open(file) as f:
-                tree = eggparse.egg_tokenize(f.readlines())
+    ctx.cache_eggs()
+    for tree in ctx.eggs.values():
+        removals = set()
+        for group in tree.findall("Group"):
+            if fnmatch.fnmatch(group.node_name, pattern):
+                removals.add(group)
 
-            removals = set()
-            for group in tree.findall("Group"):
-                if fnmatch.fnmatch(group.node_name, pattern):
-                    removals.add(group)
-
-            tree.remove_nodes(removals)
-            with open(file, "w") as f:
-                f.write(str(tree))
+        tree.remove_nodes(removals)
 
 
 def action_egg2bam(ctx):
     files = []
+    # if followed by palettize we wont have eggs here
+    ctx.cache_eggs()
+    for file, eggtree in ctx.eggs.items():
+        logger.info("%s: Copying %s into the dist directory", ctx.name, file)
+        files.append(file)
+
+        operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
+        for tex in eggtree.findall("Texture"):
+            filename = eggparse.sanitize_string(tex.get_child(0).value).split("/")[-1]
+            shutil.copy(filename, f"{ctx.output_texture}/{filename}")
+
+    ctx.uncache_eggs()
     for file in ctx.files:
         if file.endswith(".egg"):
-            logger.info("%s: Copying %s into the dist directory", ctx.name, file)
-            files.append(file)
-
-            with open(file) as f:
-                eggtree = eggparse.egg_tokenize(f.readlines())
-            operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
-            for tex in eggtree.findall("Texture"):
-                filename = eggparse.sanitize_string(tex.get_child(0).value).split("/")[-1]
-                shutil.copy(filename, f"{ctx.output_texture}/{filename}")
-
-            with open(file, "w") as f:
-                f.write(str(eggtree))
-
             shutil.copy(file, f"{ctx.output_model}/{file}")
 
     os.chdir(ctx.output_model)

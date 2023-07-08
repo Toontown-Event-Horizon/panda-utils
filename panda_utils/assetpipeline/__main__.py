@@ -6,6 +6,7 @@ import sys
 import yaml
 
 from panda_utils.assetpipeline import imports
+from panda_utils.eggtree import eggparse
 from panda_utils.util import Context
 
 OUTPUT_PARENT = "built"
@@ -29,6 +30,27 @@ class AssetContext:
         self.output_model_rel = f"{output_phase}/models/{output_folder}"
         self.output_model = os.path.abspath(os.path.dirname(self.intermediate_path))
         self.output_texture = os.path.abspath(f"{OUTPUT_PARENT}/{output_phase}/maps")
+        self.eggs = None
+
+    def cache_eggs(self):
+        if self.eggs is not None:
+            return
+
+        self.eggs = {}
+        for file in self.files:
+            if file.endswith(".egg"):
+                with open(file) as f:
+                    tree = eggparse.egg_tokenize(f.readlines())
+                self.eggs[file] = tree
+
+    def uncache_eggs(self):
+        if self.eggs is None:
+            return
+
+        for file, tree in self.eggs.items():
+            with open(file, "w") as f:
+                f.write(str(tree))
+        self.eggs = None
 
     @property
     def files(self):
