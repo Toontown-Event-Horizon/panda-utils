@@ -1,6 +1,7 @@
 import fnmatch
 import logging
 import os
+import platform
 import re
 import shutil
 import subprocess
@@ -31,6 +32,17 @@ def build_asset_mapper(assets, name):
         new_file_name = f"{name}-{counter}.{extension}" if counter else f"{name}.{extension}"
         output[item] = new_file_name
     return output
+
+
+def __patch_filename(filename):
+    osname = platform.system()
+    if osname == "Linux":
+        return filename
+
+    if osname == "Windows":
+        return filename[1] + ":\\" + filename[3:].replace("/", "\\")
+
+    raise RuntimeError(f"Unsupported OS: {osname}")
 
 
 def action_preblend(ctx):
@@ -132,6 +144,7 @@ def action_optimize(ctx):
 
     texture_mapper = build_asset_mapper(textures, ctx.model_name)
     for fnold, fnnew in texture_mapper.items():
+        fnold = __patch_filename(fnold)
         shutil.move(fnold, fnnew)
 
     for file, eggtree in ctx.eggs.items():
