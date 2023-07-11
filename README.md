@@ -543,18 +543,51 @@ It takes no arguments.
 
 ### Script
 
-This step can be used to run scripts that are not packaged with this project.
-The script will run in the directory including (transformed versions of) all
-assets in the input directory. It will receive the name of the model as its only
-argument. This step includes one parameter with the path to the script. Note that
-due to the specifics of implementation, it has to be one file, but the type
-of the script is not limited (shell, python, etc.) as long as it's an executable.
+This step can be used to run Python scripts that are not packaged with this project.
+
+To use this step, your directory structure has to look like this:
+
+```
+...
+built
+  ...
+scripts
+  file1.py
+  file2.py
+  ...
+```
+
+The step does not apply any restrictions on the Python filenames, except that
+they must be valid package names.
+
+The step then can be invoked through `script:file1`. It will import the file
+and run its `run()` function with one argument `ctx`, which is the internal
+Pipeline context. The script will run in the intermediate folder including
+all asset files generated so far. The context has a lot of attributes,
+but the following attributes are most useful:
+
+* `model_name` - the name of the model being worked on.
+* `eggs` - a dictionary. See `cache_eggs` below.
+* `files` - all files in the current directory, in sorted order. Note that this
+  will update in real time as you add or remove files, so be careful.
+* `cache_eggs()` - loads all egg files in folder into `eggs` dictionary, which
+  will have the filenames as keys and the syntax trees as values (see eggparse).
+  This is useful if the script does operations on the syntax tree.
+* `uncache_eggs()` - saves all egg syntax trees back into the files. This is
+  useful if the script operates on egg files directly (egg-trans, egg-optchar etc.)
+* `putil_ctx` - a context that can be used to call the Utils-Core functions
+  (i.e. `run_panda`).
+
+Generally you don't need to run `uncache_eggs` at the end of working with trees,
+or run `cache_eggs` at the end of not working with trees, the other steps
+have a convention to run this only at the start.
 
 **Changelog**
+* 1.4 - only runs Python files, changed mechanics
 * 1.1 - initial implementation
 
 **Examples**
-* `script:scripts/magic.sh`
+* `script:magic`
 
 For example, if your directory structure looks like this:
 
@@ -564,13 +597,13 @@ inputs
     model.blend
     texture.png
 scripts
-  magic.sh (needs an executable flag)
+  magic.py
 ```
 
 The pipeline would be invoked like this:
 
 ```shell
-python -m panda_utils.assetpipeline inputs/asset_name asset char script:scripts/magic.sh
+python -m panda_utils.assetpipeline inputs/asset_name asset char script:magic
 ```
 
 ## Future plans
