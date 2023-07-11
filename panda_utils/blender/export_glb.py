@@ -1,6 +1,12 @@
 import os
+import sys
 
 import bpy
+
+argv = sys.argv
+argv = argv[argv.index("--") + 1:]  # get all arguments after "--"
+
+output_file = argv[0]
 
 
 def update_texture_paths():
@@ -14,4 +20,4 @@ def update_texture_paths():
 
 
 update_texture_paths()
-bpy.ops.wm.save_as_mainfile(filepath=bpy.data.filepath)
+bpy.ops.export_scene.gltf(filepath=output_file, check_existing=False, export_keep_originals=True)

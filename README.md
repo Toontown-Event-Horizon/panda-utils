@@ -228,22 +228,42 @@ generated through Preblend. This step takes no arguments.
 
 ### Blend2Bam
 
-This step will use Blend2Bam to convert the BLEND moodels into an intermediate
-BAM model. It should happen after `preblend` or `blendrename`. This model
-is usually not suitable for ingame use and requires further processing through
-`bam2egg`. This step requires installing Blender on the machine. It is tested
-with Blender 3.5.1, but is likely to work on other versions as well.
+This step will use Blend2Bam or Gltf2Bam to convert the BLEND moodels into an
+intermediate BAM model. It should happen after `preblend` or `blendrename`.
+This model is usually not suitable for ingame use and requires
+further processing through `bam2egg` and followup steps. This step requires
+installing Blender on the machine and adding it into the system's PATH
+(this is active on Linux by default, but requires special steps on Windows).
+It is tested with Blender 3.5.1, but is likely to work on other versions as well.
 
-This is currently using the GLTF pipeline (available since Blender 2.8),
-the builtin physics system (not bullet), and disables sRGB textures due to 
-specifics of Toontown use. It takes no arguments, but these things 
-might become configurable later through optional arguments.
+This step accepts one parameter `flags`. It defaults to empty string, and includes
+zero or more comma-separated flags from the following list:
+* `b2b` - if this flag is present, the exporter uses `panda3d-blend2bam`. 
+  If it is not present, the exporter uses Blender's GLTF exporter and
+  `panda3d-gltf`. Note that the blend2bam pipeline currently does not properly
+  export texture paths on Windows, so it is recommended to keep this at False
+  unless there are reasons to set it to True.
+* `srgb` - enables the use of sRGB textures. This is the default behavior
+  of `panda3d-gltf`, but it causes certain models to display darker than they
+  look in other software, so it is disabled by default.
+* `bullet` - enables the use of Bullet collision solids. By default, builtin
+  collision solids are used, but this has to be enabled if your project uses
+  Bullet. Not compatible with the `collide` step.
+* `legacy` - export legacy BAM materials. By default, exports PBR materials.
+
+For other Toontown developers: we use no flags while exporting.
+
+Model exports through other means (YABEE, Blend2bam's Egg pipeline, Boterham)
+are currently not implemented, but are considered for use in the future. 
 
 **Changelog**
+* 1.4 - uses GLTF by default (prior to this version, only blend2bam conversion
+  was available), added flags (b2b, srgb, bullet, legacy)
 * 1.1 - initial implementation
 
 **Examples**
 * `blend2bam`
+* `blend2bam:srgb,bullet`
 
 ### Bam2Egg
 
