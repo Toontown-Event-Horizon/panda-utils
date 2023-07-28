@@ -5,7 +5,10 @@ def set_texture_prefix(tree: eggparse.EggTree, new_prefix: str) -> None:
     textures = tree.findall("Texture")
     for texture in textures:
         texture_name = texture.get_child(0)
-        filename = eggparse.sanitize_string(texture_name.value).split("/")[-1]
+        og_filename = eggparse.sanitize_string(texture_name.value)
+        if og_filename.startswith(new_prefix) and "/.." not in og_filename:
+            continue
+        filename = og_filename.split("/")[-1]
         texture_name.value = f"{new_prefix}/{filename}"
 
 

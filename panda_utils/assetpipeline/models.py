@@ -1,6 +1,7 @@
 import fnmatch
 import logging
 import os
+import pathlib
 import platform
 import re
 import shutil
@@ -14,6 +15,7 @@ from panda_utils.tools.palettize import remove_palette_indices
 from panda_utils.util import get_data_file_path
 
 preblend_regex = re.compile(r".*\.(fbx|obj)")
+image_regex = re.compile(r".*\.(png|jpg|rgb)")
 logger = logging.getLogger("panda_utils.pipeline.models")
 
 
@@ -84,8 +86,10 @@ def __make_blend2bam_args(binary, flags):
 def __run_export_util(ctx, binary, input_file, output_file, flags):
     res = subprocess.run(
         [binary, *__make_blend2bam_args(binary, flags), input_file, output_file],
-        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, cwd=ctx.cwd
-        )
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        cwd=ctx.cwd,
+    )
     err = res.stderr.decode("utf-8")
     if err and "KeyError: 'nodes'" in err:
         logger.error("%s: Blender output an empty model, aborting.", ctx.name)
@@ -135,14 +139,24 @@ def action_bam2egg(ctx):
             bam2egg(ctx.putil_ctx, file)
 
 
-def action_optimize(ctx):
+def action_yabee(ctx):
+    for file in ctx.files:
+        if file.endswith(".blend"):
+            logger.info("%s: Exporting through YABEE: %s", ctx.name, file)
+            full_path = f"{ctx.cwd}/{file}"
+            run_blender(ctx.cwd, full_path, "blender/export_with_yabee.py", file[:-6] + ".egg")
+
+
+def action_optimize(ctx, map_textures="true"):
+    map_textures = map_textures.lower() not in ("", "0", "false")
+
     textures = set()
     ctx.cache_eggs()
     for tree in ctx.eggs.values():
         for tex in tree.findall("Texture"):
             textures.add(eggparse.sanitize_string(tex.get_child(0).value))
 
-    texture_mapper = build_asset_mapper(textures, ctx.model_name)
+    texture_mapper = build_asset_mapper(textures, ctx.model_name) if map_textures else {}
     for fnold, fnnew in texture_mapper.items():
         fnold = __patch_filename(fnold)
         shutil.move(fnold, fnnew)
@@ -152,7 +166,8 @@ def action_optimize(ctx):
         # The first thing we should do is patch the texture paths
         for tex in eggtree.findall("Texture"):
             tex_node = tex.get_child(0)
-            tex_node.value = texture_mapper[eggparse.sanitize_string(tex_node.value)]
+            old_value = eggparse.sanitize_string(tex_node.value)
+            tex_node.value = texture_mapper.get(old_value, old_value)
 
         # We also need to remove the default cube and the cameras if they're present in the model
         nodeset = set()
@@ -271,7 +286,7 @@ def action_palettize(ctx, palette_size="1024", flags=""):
 
     all_eggs = [file for file in ctx.files if file.endswith(".egg")]
 
-    logger.info("%s: Palettizing %s...", ctx.name, ', '.join(all_eggs))
+    logger.info("%s: Palettizing %s...", ctx.name, ", ".join(all_eggs))
     util.run_panda(
         ctx.putil_ctx,
         "egg-palettize",
@@ -338,23 +353,46 @@ def action_group_remove(ctx, pattern):
         tree.remove_nodes(removals)
 
 
-def action_egg2bam(ctx):
+def action_egg2bam(ctx, all_textures=""):
+    all_textures = all_textures.lower() not in ("", "0", "false")
+
     files = []
     # if followed by palettize we wont have eggs here
     ctx.cache_eggs()
+
+    copied_files = set()
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Copying %s into the dist directory", ctx.name, file)
         files.append(file)
-
         operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
         for tex in eggtree.findall("Texture"):
             filename = eggparse.sanitize_string(tex.get_child(0).value).split("/")[-1]
-            shutil.copy(filename, f"{ctx.output_texture}/{filename}")
+            copied_files.add(filename)
+
+    if all_textures:
+        copied_files.clear()
+        for filename in ctx.files:
+            if image_regex.match(filename):
+                copied_files.add(filename)
+
+    copied_files = {cf: ctx.path_overrides.get(cf) for cf in copied_files}
+    delete_paths = set()
+    delete_parents = set()
+    for filename, target_path in copied_files.items():
+        if target_path is None:
+            copy_path = pathlib.Path(ctx.output_texture, filename)
+        else:
+            copy_path = pathlib.Path(ctx.output_texture, target_path, filename)
+        copy_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(filename, copy_path)
+        if filename in ctx.post_remove:
+            delete_paths.add(copy_path)
+            delete_parents.add(copy_path.parent)
 
     ctx.uncache_eggs()
     for file in ctx.files:
         if file.endswith(".egg"):
-            shutil.copy(file, f"{ctx.output_model}/{file}")
+            shutil.copy(file, pathlib.Path(ctx.output_model, file))
 
     os.chdir(ctx.output_model)
     os.chdir(ctx.putil_ctx.resources_path)
@@ -366,3 +404,7 @@ def action_egg2bam(ctx):
             os.unlink(f"{ctx.output_model}/{file}")
     os.chdir(ctx.cwd)
     ctx.putil_ctx.working_path = ctx.cwd
+    for dp in delete_paths:
+        os.unlink(dp)
+    for folder in delete_parents:
+        ctx.reverse_rmdir(folder)

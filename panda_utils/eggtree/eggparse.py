@@ -80,7 +80,9 @@ class EggLeaf(EggNode):
 
     def equals(self, other):
         return (
-            isinstance(other, EggLeaf) and other.node_name == self.node_name and other.node_value == self.node_value
+            isinstance(other, EggLeaf)
+            and other.node_name == self.node_name
+            and other.node_value == self.node_value
             and other.node_type == self.node_type
         )
 
@@ -138,7 +140,7 @@ class EggBranch(EggNode):
 
 
 def sanitize_string(val):
-    if val and val[0] in '"\'':
+    if val and val[0] in "\"'":
         return val[1:-1]
     return val
 

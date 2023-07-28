@@ -4,7 +4,7 @@ import sys
 import bpy
 
 argv = sys.argv
-argv = argv[argv.index("--") + 1:]  # get all arguments after "--"
+argv = argv[argv.index("--") + 1 :]  # get all arguments after "--"
 
 output_file = argv[0]
 

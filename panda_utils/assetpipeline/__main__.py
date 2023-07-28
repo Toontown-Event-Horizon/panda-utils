@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import shutil
 import sys
 
@@ -31,6 +32,8 @@ class AssetContext:
         self.output_model = os.path.abspath(os.path.dirname(self.intermediate_path))
         self.output_texture = os.path.abspath(f"{OUTPUT_PARENT}/{output_phase}/maps")
         self.eggs = None
+        self.path_overrides = {}
+        self.post_remove = set()
 
     def cache_eggs(self):
         if self.eggs is not None:
@@ -56,6 +59,14 @@ class AssetContext:
     def files(self):
         return sorted(os.listdir())
 
+    @staticmethod
+    def get_injection_path(name):
+        injections_base_path = pathlib.Path("..", "..", "common")
+        all_injections = os.listdir(injections_base_path)
+        if name not in all_injections:
+            return None
+        return injections_base_path / name
+
     def run_action_through_config(self, action, name):
         if YAML_CONFIG_FILENAME not in self.files:
             return
@@ -80,6 +91,14 @@ class AssetContext:
             action(self, args)
         else:
             logger.warning("%s: Invalid configured arguments: %s (expected dict, or str)", self.name, type(args))
+
+    @staticmethod
+    def reverse_rmdir(path):
+        while not os.listdir(path):
+            path.rmdir()
+            path = path.parent
+            if path[-1] == OUTPUT_PARENT:
+                break
 
 
 def main(enable_logging=False):
