@@ -360,34 +360,31 @@ def action_egg2bam(ctx, all_textures=""):
     # if followed by palettize we wont have eggs here
     ctx.cache_eggs()
 
-    copied_files = set()
+    copied_files = {}
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Copying %s into the dist directory", ctx.name, file)
         files.append(file)
         operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
         for tex in eggtree.findall("Texture"):
-            filename = eggparse.sanitize_string(tex.get_child(0).value).split("/")[-1]
-            copied_files.add(filename)
+            full_path = eggparse.sanitize_string(tex.get_child(0).value)
+            filename = full_path.split("/")[-1]
+            # The first two components of full_path we can safely ignore because they're phase_X/maps
+            copied_files[filename] = pathlib.Path(pathlib.PurePosixPath(full_path.split("/", 2)[2]))
 
     if all_textures:
-        copied_files.clear()
+        # By default, we will be copying the textures into the `phase_X/maps/` folder
+        # But if the egg file tells us to copy them into `phase_X/maps/subfolder/` then so be it
         for filename in ctx.files:
-            if image_regex.match(filename):
-                copied_files.add(filename)
+            if filename not in copied_files and image_regex.match(filename):
+                copied_files[filename] = filename
 
-    copied_files = {cf: ctx.path_overrides.get(cf) for cf in copied_files}
-    delete_paths = set()
-    delete_parents = set()
-    for filename, target_path in copied_files.items():
-        if target_path is None:
-            copy_path = pathlib.Path(ctx.output_texture, filename)
-        else:
-            copy_path = pathlib.Path(ctx.output_texture, target_path, filename)
+    # Under no circumstances, we will be copying common texture set into the built/ folder.
+    # This should be done by some other thing *before* we run the pipeline.
+    copied_files = {cf: target for cf, target in copied_files.items() if cf not in ctx.copy_ignores}
+    for filename, target in copied_files.items():
+        copy_path = pathlib.Path(ctx.output_texture, target)
         copy_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(filename, copy_path)
-        if filename in ctx.post_remove:
-            delete_paths.add(copy_path)
-            delete_parents.add(copy_path.parent)
 
     ctx.uncache_eggs()
     for file in ctx.files:
@@ -404,7 +401,3 @@ def action_egg2bam(ctx, all_textures=""):
             os.unlink(f"{ctx.output_model}/{file}")
     os.chdir(ctx.cwd)
     ctx.putil_ctx.working_path = ctx.cwd
-    for dp in delete_paths:
-        os.unlink(dp)
-    for folder in delete_parents:
-        ctx.reverse_rmdir(folder)
