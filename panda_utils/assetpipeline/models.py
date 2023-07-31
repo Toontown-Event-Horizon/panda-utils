@@ -30,6 +30,9 @@ def run_blender(cwd, file, script, *inputs):
 def build_asset_mapper(assets, name):
     output = {}
     for counter, item in enumerate(sorted(assets)):
+        if "_palette_" in item:
+            continue
+
         extension = item.split(".")[-1]
         new_file_name = f"{name}-{counter}.{extension}" if counter else f"{name}.{extension}"
         output[item] = new_file_name
@@ -245,7 +248,7 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, 
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Adding collisions to %s/%s: flags=%s method=%s", ctx.name, file, group_name, flags, method)
         groups = [group for group in eggtree.findall("Group") if group.node_name == group_name]
-        if len(groups) == 1:
+        if groups:
             logger.info("Found the named group!")
             new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
             group_children = groups[0].children.children
@@ -265,7 +268,7 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, 
                 groups[0].remove_nodes(set(nodes))
 
 
-def action_palettize(ctx, palette_size="1024", flags=""):
+def action_palettize(ctx, palette_size="1024", flags="", exclusions=""):
     ctx.uncache_eggs()
     palette_size = int(palette_size)
     if palette_size & (palette_size - 1):
@@ -279,8 +282,24 @@ def action_palettize(ctx, palette_size="1024", flags=""):
         ":imagetype png\n"
         ":powertwo 1\n"
         f":group {ctx.model_name} dir .\n"
-        f"*.png : force-rgba dual linear clamp_u clamp_v margin 5\n"
     )
+    if isinstance(exclusions, str):
+        exclusions = list(filter(None, exclusions.split(",")))
+
+    all_png_files = [file for file in ctx.files if file.endswith(".png")]
+    included_png_files, excluded_png_files = [], []
+    for file in all_png_files:
+        if file in exclusions:
+            excluded_png_files.append(file)
+        else:
+            included_png_files.append(file)
+
+    if not included_png_files:
+        raise RuntimeError("No images were included in the palette!")
+    txa_text += " ".join(included_png_files) + " : force-rgba dual linear clamp_u clamp_v margin 5\n"
+    if excluded_png_files:
+        txa_text += " ".join(excluded_png_files) + " : omit\n"
+
     with open("textures.txa", "w") as txa_file:
         txa_file.write(txa_text)
 
