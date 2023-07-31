@@ -102,7 +102,7 @@ def __run_export_util(ctx, binary, input_file, output_file, flags):
 
 def __run_blend2bam(ctx, file, flags):
     logger.info("%s: Patching texture paths: %s", ctx.name, file)
-    full_path = f"{ctx.cwd}/{file}"
+    full_path = pathlib.Path(ctx.cwd, file)
     run_blender(ctx.cwd, full_path, "blender/patch_paths.py")
 
     logger.info("%s: Converting to bam: %s", ctx.name, file)
@@ -112,10 +112,10 @@ def __run_blend2bam(ctx, file, flags):
 
 def __run_gltf2bam(ctx, file, flags):
     logger.info("%s: Exporting to GLTF: %s", ctx.name, file)
-    full_path = f"{ctx.cwd}/{file}"
+    full_path = pathlib.Path(ctx.cwd, file)
     intermediate_file = file[:-5] + "glb"
     bam_filename = file[:-5] + "bam"
-    target_path = f"{ctx.cwd}/{intermediate_file}"
+    target_path = pathlib.Path(ctx.cwd, intermediate_file)
     run_blender(ctx.cwd, full_path, "blender/export_glb.py", target_path)
 
     logger.info("%s: Converting to bam: %s", ctx.name, intermediate_file)
@@ -143,7 +143,7 @@ def action_yabee(ctx):
     for file in ctx.files:
         if file.endswith(".blend"):
             logger.info("%s: Exporting through YABEE: %s", ctx.name, file)
-            full_path = f"{ctx.cwd}/{file}"
+            full_path = pathlib.Path(ctx.cwd, file)
             run_blender(ctx.cwd, full_path, "blender/export_with_yabee.py", file[:-6] + ".egg")
 
 
@@ -364,6 +364,7 @@ def action_egg2bam(ctx, all_textures=""):
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Copying %s into the dist directory", ctx.name, file)
         files.append(file)
+        # don't have to do pathlib stuff here because egg files only use unix paths
         operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
         for tex in eggtree.findall("Texture"):
             full_path = eggparse.sanitize_string(tex.get_child(0).value)
@@ -397,7 +398,7 @@ def action_egg2bam(ctx, all_textures=""):
     for file in files:
         if file.endswith(".egg"):
             logger.info("%s: Converting %s to bam", ctx.name, file)
-            egg2bam(ctx.putil_ctx, ctx.output_model_rel + "/" + file)
-            os.unlink(f"{ctx.output_model}/{file}")
+            egg2bam(ctx.putil_ctx, str(pathlib.Path(ctx.output_model_rel, file)))
+            os.unlink(pathlib.Path(ctx.output_model, file))
     os.chdir(ctx.cwd)
     ctx.putil_ctx.working_path = ctx.cwd

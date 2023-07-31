@@ -24,13 +24,14 @@ class AssetContext:
         self.valid = True
 
         self.initial_wd = os.getcwd()
-        self.model_name = input_folder.split("/")[-1]
+        self.model_name = input_folder.name
         self.name = self.model_name.replace("-", " ").replace("_", " ").title()
 
-        self.intermediate_path = f"{OUTPUT_PARENT}/{output_phase}/models/{output_folder}/{self.model_name}"
-        self.output_model_rel = f"{output_phase}/models/{output_folder}"
-        self.output_model = os.path.abspath(os.path.dirname(self.intermediate_path))
-        self.output_texture = os.path.abspath(f"{OUTPUT_PARENT}/{output_phase}/maps")
+        self.intermediate_path = pathlib.Path(OUTPUT_PARENT, output_phase, "models", output_folder, self.model_name)
+        self.output_model_rel = pathlib.Path(output_phase, "models", output_folder)
+        self.output_model = self.intermediate_path.parent.absolute()
+        self.output_texture = pathlib.Path(OUTPUT_PARENT, output_phase, "maps").absolute()
+
         self.eggs = None
         self.copy_ignores = set()
 
@@ -103,9 +104,13 @@ def main(enable_logging=False):
         global_logger.addHandler(console)
 
     _, input_folder, output_phase, output_folder, *pipeline = sys.argv
+    input_folder = pathlib.Path(input_folder)
     ctx = AssetContext(input_folder, output_phase, output_folder)
 
-    intermediate_folder = "intermediate/" + ctx.intermediate_path.replace("/", "__")
+    intermediate_folder = pathlib.Path(
+        # We use __ instead of hierarchy to flatten the structure inside intermediate
+        "intermediate", str(pathlib.PurePosixPath(ctx.intermediate_path)).replace("/", "__")
+    )
     os.makedirs("intermediate", exist_ok=True)
     if os.path.exists(intermediate_folder):
         shutil.rmtree(intermediate_folder)
