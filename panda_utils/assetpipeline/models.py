@@ -19,8 +19,8 @@ image_regex = re.compile(r".*\.(png|jpg|rgb)")
 logger = logging.getLogger("panda_utils.pipeline.models")
 
 
-def run_blender(cwd, file, script, *inputs):
-    args = [util.choose_binary("blender"), "--background", "--python", get_data_file_path(script), "--", *inputs]
+def run_blender(cwd, file, script, *args):
+    args = [util.choose_binary("blender"), "--background", "--python", get_data_file_path(script), "--", *args]
     if file is not None:
         args.insert(1, file)
     stdout_pipe = subprocess.DEVNULL if not os.getenv("PANDA_UTILS_BLENDER_LOGGING") else None
@@ -142,12 +142,22 @@ def action_bam2egg(ctx):
             bam2egg(ctx.putil_ctx, file)
 
 
-def action_yabee(ctx):
+def action_yabee(ctx, **kwargs):
+    args_converted = [f"{target_name}::{blender_name}" for target_name, blender_name in kwargs.items()]
     for file in ctx.files:
         if file.endswith(".blend"):
             logger.info("%s: Exporting through YABEE: %s", ctx.name, file)
             full_path = pathlib.Path(ctx.cwd, file)
-            run_blender(ctx.cwd, full_path, "blender/export_with_yabee.py", file[:-6] + ".egg")
+            egg_name = file[:-6] + ".egg"
+            run_blender(ctx.cwd, full_path, "blender/export_with_yabee.py", egg_name, *args_converted)
+
+            # NOTE: yabee does not care about the spaces in the file
+            # which means the file is hard to postprocess, so we have to do this thing below
+            # I think it only happens if any animations are exported - Wizz
+
+            if kwargs:
+                egg2bam(ctx.putil_ctx, egg_name)
+                bam2egg(ctx.putil_ctx, egg_name[:-4] + ".bam")
 
 
 def action_optimize(ctx, map_textures="true"):

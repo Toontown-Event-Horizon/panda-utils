@@ -6,7 +6,9 @@ import addon_utils
 argv = sys.argv
 argv = argv[argv.index("--") + 1 :]  # get all arguments after "--"
 
-output_file = argv[0]
+output_file, *animations = argv
+animations = [x.split("::") for x in animations]
+animations = {blender_name: target_name for target_name, blender_name in animations}
 
 # we need to find the module that exports eggs
 modules = [
@@ -25,7 +27,7 @@ bpy.ops.object.select_all(action="SELECT")
 errors = yabee.egg_writer.write_out(
     output_file,
     {},  # animations dictionary
-    False,  # "Export an animation for every action"
+    False,  # "Export an animation for every action" (obsoleted by actions dict)
     False,  # "Export UV map as texture"
     True,  # "Write an animation data into the separate files"
     False,  # "Write only animation data"
@@ -40,6 +42,7 @@ errors = yabee.egg_writer.write_out(
     False,  # "Use loop normals created by applying 'Normal Edit' Modifier as vertex normals."
     False,  # "Export Physically Based Properties, requires the BAM Exporter",
     False,  # "when False, writes only vertex color if polygon material is using it "
+    actions=animations,  # option specific to our YABEE
 )
 
 # right now status code of blender is ignored, so we're not checking the errors XD
