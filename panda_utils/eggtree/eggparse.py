@@ -10,7 +10,10 @@ class EggTree:
         self.children = list(children)
 
     def __iadd__(self, other):
-        self.children.append(other)
+        if isinstance(other, list):
+            self.children.extend(other)
+        else:
+            self.children.append(other)
         return self
 
     def __iter__(self):
@@ -145,21 +148,28 @@ def sanitize_string(val):
     return val
 
 
-single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
+single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$*]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
 preline_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.<>\" ]+ )?\{([^\n]*)")
 
 
 def subtree_tokenize(lines: List[str]):
     last_line = lines[-1].strip()
     if len(lines) == 1:
+        if last_line.count("}") > 1 and not last_line.startswith("<VertexRef>"):
+            parts = [x + "}" for x in last_line.split("}")[:-1]]
+            nodes = []
+            for part in parts:
+                nodes += subtree_tokenize([part])
+            return nodes
+
         match = single_line_leaf_regex.match(last_line)
         if not match:
             raise ValueError(f"subtree_tokenize: Invalid single-line subtree: {lines[0]}")
 
         final = match.group(3)
         if "}" not in final or match.group(1) == "VertexRef":
-            return EggLeaf(match.group(1), match.group(2), final)
-        return EggBranch(match.group(1), match.group(2), EggTree(subtree_tokenize([final])))
+            return [EggLeaf(match.group(1), match.group(2), final)]
+        return [EggBranch(match.group(1), match.group(2), EggTree(*subtree_tokenize([final])))]
 
     lines = lines[:-1] + list(last_line)
     if lines[-1] != "}":
@@ -171,7 +181,7 @@ def subtree_tokenize(lines: List[str]):
     if append:
         lines.insert(1, append)
     tree = egg_tokenize([line.strip() for line in lines[1:-1]])
-    return EggBranch(preamble.group(1), preamble.group(2), tree)
+    return [EggBranch(preamble.group(1), preamble.group(2), tree)]
 
 
 def egg_tokenize(lines: List[str]) -> EggTree:

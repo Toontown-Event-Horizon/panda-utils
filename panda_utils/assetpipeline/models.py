@@ -151,13 +151,9 @@ def action_yabee(ctx, **kwargs):
             egg_name = file[:-6] + ".egg"
             run_blender(ctx.cwd, full_path, "blender/export_with_yabee.py", egg_name, *args_converted)
 
-            # NOTE: yabee does not care about the spaces in the file
-            # which means the file is hard to postprocess, so we have to do this thing below
-            # I think it only happens if any animations are exported - Wizz
-
-            if kwargs:
-                egg2bam(ctx.putil_ctx, egg_name)
-                bam2egg(ctx.putil_ctx, egg_name[:-4] + ".bam")
+            target_name = ctx.model_name + ".egg"
+            if egg_name != target_name:
+                shutil.move(egg_name, target_name)
 
 
 def action_optimize(ctx, map_textures="true"):
@@ -342,19 +338,19 @@ def action_optchar(ctx, flags, expose):
     if isinstance(expose, str):
         expose = expose.split(",")
 
-    for file in ctx.files:
-        if file.endswith(".egg"):
-            command = ["egg-optchar", file, "-inplace", "-keepall"]
+    file = ctx.model_name + ".egg"
+    if file in ctx.files:
+        command = ["egg-optchar", file, "-inplace", "-keepall"]
 
-            for flag in flags:
-                command.append("-flag")
-                command.append(flag)
+        for flag in flags:
+            command.append("-flag")
+            command.append(flag)
 
-            for joint in expose:
-                command.append("-expose")
-                command.append(joint)
+        for joint in expose:
+            command.append("-expose")
+            command.append(joint)
 
-            util.run_panda(ctx.putil_ctx, *command)
+        util.run_panda(ctx.putil_ctx, *command)
 
 
 def action_group_rename(ctx, **kwargs):
