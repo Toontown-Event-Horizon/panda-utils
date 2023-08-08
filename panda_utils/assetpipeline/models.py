@@ -194,7 +194,7 @@ def action_transparent(ctx):
         new_node = eggparse.EggLeaf("Scalar", "alpha", "dual")
         for tex in tree.findall("Texture"):
             for child in tex.children:
-                if child.equals(new_node):
+                if repr(child) == repr(new_node):
                     break
             else:
                 tex.add_child(new_node)
@@ -320,7 +320,8 @@ def action_palettize(ctx, palette_size="1024", flags="", exclusions=""):
         "-nodb",
         "-inplace",
         *all_eggs,
-        "-inplace",
+        "-dm",
+        "palette-temp",
         "-tn",
         f"{ctx.model_name}_palette_%p_%i",
         timeout=60,
@@ -329,6 +330,18 @@ def action_palettize(ctx, palette_size="1024", flags="", exclusions=""):
     if "ordered" in flag_list:
         for file in all_eggs:
             remove_palette_indices(file)
+
+    logger.info("%s: Patching textures after palettization...", ctx.name)
+    ctx.cache_eggs()
+    for eggtree in ctx.eggs.values():
+        for texture in eggtree.findall("Texture"):
+            texture_name = texture.get_child(0)
+            texture_name.value = texture_name.value.replace("palette-temp/", "", 1)
+    palette_folder = pathlib.Path("palette-temp")
+    for file in os.listdir(palette_folder):
+        if "_palette_" in file:
+            shutil.move(palette_folder / file, file)
+    shutil.rmtree(palette_folder)
 
 
 def action_optchar(ctx, flags, expose):

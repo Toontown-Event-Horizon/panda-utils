@@ -50,10 +50,6 @@ class EggNode(abc.ABC):
     def get_child(self, index):
         pass
 
-    # We can't use __eq__ because it breaks set()
-    def equals(self, other):
-        return False
-
 
 class EggString(EggNode):
     def __init__(self, value):
@@ -71,23 +67,12 @@ class EggString(EggNode):
     def get_child(self, index):
         return None
 
-    def equals(self, other):
-        return isinstance(other, EggString) and other.value == self.value
-
 
 class EggLeaf(EggNode):
     def __init__(self, node_type, node_name, node_value):
         self.node_type = node_type
         self.node_name = (node_name or "").strip()
         self.node_value = node_value
-
-    def equals(self, other):
-        return (
-            isinstance(other, EggLeaf)
-            and other.node_name == self.node_name
-            and other.node_value == self.node_value
-            and other.node_type == self.node_type
-        )
 
     def __repr__(self):
         if self.node_name:
@@ -148,8 +133,8 @@ def sanitize_string(val):
     return val
 
 
-single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$*]+)> ([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
-preline_regex = re.compile(r"<([A-Za-z0-9_$]+)> ([-a-z0-9A-Z_.<>\" ]+ )?\{([^\n]*)")
+single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$*]+)> +([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
+preline_regex = re.compile(r"<([A-Za-z0-9_$]+)> +([-a-z0-9A-Z_.<>\" ]+ )?\{([^\n]*)")
 
 
 def subtree_tokenize(lines: List[str]):
