@@ -6,6 +6,12 @@ import addon_utils
 argv = sys.argv
 argv = argv[argv.index("--") + 1 :]  # get all arguments after "--"
 
+# YABEE only works from object mode, which cannot exist in some views, so we go to layout first
+bpy.context.window.workspace = bpy.data.workspaces['Layout']
+for obj in bpy.context.selected_objects:
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+
 output_file, *animations = argv
 animations = [x.split("::") for x in animations]
 animations = {blender_name: target_name for target_name, blender_name in animations}
