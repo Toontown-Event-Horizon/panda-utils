@@ -303,7 +303,7 @@ def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusion
 
     if not included_png_files:
         raise RuntimeError("No images were included in the palette!")
-    txa_text += " ".join(included_png_files) + " : force-rgba dual linear clamp_u clamp_v margin 5\n"
+    txa_text += " ".join(included_png_files) + " : force-rgba dual linear margin 5\n"
     if excluded_png_files:
         txa_text += " ".join(excluded_png_files) + " : omit\n"
 
