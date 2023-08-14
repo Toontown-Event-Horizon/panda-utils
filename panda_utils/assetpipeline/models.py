@@ -392,6 +392,13 @@ def action_group_remove(ctx: AssetContext, pattern):
         tree.remove_nodes(removals)
 
 
+def action_delete_vertex_colors(ctx: AssetContext):
+    ctx.cache_eggs()
+    for tree in ctx.eggs.values():
+        for poly in tree.findall("Vertex"):
+            poly.remove_nodes(poly.findall("RGBA"))
+
+
 def action_egg2bam(ctx: AssetContext, all_textures=""):
     all_textures = all_textures.lower() not in ("", "0", "false")
 
