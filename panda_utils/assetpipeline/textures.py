@@ -1,12 +1,13 @@
 import logging
 
 from panda_utils import util
+from panda_utils.assetpipeline.commons import AssetContext
 from panda_utils.tools.downscale import downscale
 
 logger = logging.getLogger("panda_utils.pipeline.textures")
 
 
-def action_downscale(ctx, size, bbox=-1, flags="", name=""):
+def action_downscale(ctx: AssetContext, size, bbox=-1, flags="", name=""):
     target_size = int(size)
     if target_size & (target_size - 1):
         raise ValueError("The target size must be a power of two!")
@@ -16,7 +17,7 @@ def action_downscale(ctx, size, bbox=-1, flags="", name=""):
     downscale(ctx.putil_ctx, ".", target_size, True, bbox, "truecenter" in flag_list, False, name, False)
 
 
-def action_texture_cards(ctx, size=None):
+def action_texture_cards(ctx: AssetContext, size=None):
     args = ["-o", f"{ctx.model_name}.egg"]
     if size:
         args += ["-p", f"{size},{size}"]

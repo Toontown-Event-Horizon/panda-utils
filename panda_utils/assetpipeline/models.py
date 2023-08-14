@@ -9,12 +9,12 @@ import subprocess
 from pathlib import Path
 
 from panda_utils import util
+from panda_utils.assetpipeline.commons import AssetContext, preblend_regex
 from panda_utils.eggtree import eggparse, operations
 from panda_utils.tools.convert import bam2egg, egg2bam
 from panda_utils.tools.palettize import remove_palette_indices
 from panda_utils.util import get_data_file_path
 
-preblend_regex = re.compile(r".*\.(fbx|obj)")
 image_regex = re.compile(r".*\.(png|jpg|rgb)")
 logger = logging.getLogger("panda_utils.pipeline.models")
 
@@ -50,7 +50,7 @@ def __patch_filename(filename):
     raise RuntimeError(f"Unsupported OS: {osname}")
 
 
-def action_preblend(ctx):
+def action_preblend(ctx: AssetContext):
     all_inputs = [file for file in ctx.files if preblend_regex.match(file)]
     logger.info("%s: Converting to blend: %s", ctx.name, ", ".join(all_inputs))
 
@@ -58,7 +58,7 @@ def action_preblend(ctx):
     run_blender(ctx.cwd, None, "blender/import_model.py", Path.cwd() / blend_filename, *all_inputs)
 
 
-def action_blendrename(ctx):
+def action_blendrename(ctx: AssetContext):
     count = 0
     for file in ctx.files:
         if file.endswith(".blend"):
@@ -86,7 +86,7 @@ def __make_blend2bam_args(binary, flags):
     return args
 
 
-def __run_export_util(ctx, binary, input_file, output_file, flags):
+def __run_export_util(ctx: AssetContext, binary, input_file, output_file, flags):
     res = subprocess.run(
         [binary, *__make_blend2bam_args(binary, flags), input_file, output_file],
         stdout=subprocess.DEVNULL,
@@ -103,7 +103,7 @@ def __run_export_util(ctx, binary, input_file, output_file, flags):
         exit(1)
 
 
-def __run_blend2bam(ctx, file, flags):
+def __run_blend2bam(ctx: AssetContext, file, flags):
     logger.info("%s: Patching texture paths: %s", ctx.name, file)
     full_path = pathlib.Path(ctx.cwd, file)
     run_blender(ctx.cwd, full_path, "blender/patch_paths.py")
@@ -113,7 +113,7 @@ def __run_blend2bam(ctx, file, flags):
     __run_export_util(ctx, "blend2bam", file, bam_filename, flags)
 
 
-def __run_gltf2bam(ctx, file, flags):
+def __run_gltf2bam(ctx: AssetContext, file, flags):
     logger.info("%s: Exporting to GLTF: %s", ctx.name, file)
     full_path = pathlib.Path(ctx.cwd, file)
     intermediate_file = file[:-5] + "glb"
@@ -125,7 +125,7 @@ def __run_gltf2bam(ctx, file, flags):
     __run_export_util(ctx, "gltf2bam", intermediate_file, bam_filename, flags)
 
 
-def action_blend2bam(ctx, flags=""):
+def action_blend2bam(ctx: AssetContext, flags=""):
     flags = flags.lower().split(",")
     for file in ctx.files:
         if file.endswith(".blend"):
@@ -135,14 +135,14 @@ def action_blend2bam(ctx, flags=""):
                 __run_gltf2bam(ctx, file, flags)
 
 
-def action_bam2egg(ctx):
+def action_bam2egg(ctx: AssetContext):
     for file in ctx.files:
         if file.endswith(".bam"):
             logger.info("%s: Converting %s from Bam to Egg", ctx.name, file)
             bam2egg(ctx.putil_ctx, file)
 
 
-def action_yabee(ctx, **kwargs):
+def action_yabee(ctx: AssetContext, **kwargs):
     args_converted = [f"{target_name}::{blender_name}" for target_name, blender_name in kwargs.items()]
     for file in ctx.files:
         if file.endswith(".blend"):
@@ -156,7 +156,7 @@ def action_yabee(ctx, **kwargs):
                 shutil.move(egg_name, target_name)
 
 
-def action_optimize(ctx, map_textures="true"):
+def action_optimize(ctx: AssetContext, map_textures="true"):
     map_textures = map_textures.lower() not in ("", "0", "false")
 
     textures = set()
@@ -187,7 +187,7 @@ def action_optimize(ctx, map_textures="true"):
         eggtree.remove_nodes(nodeset)
 
 
-def action_transparent(ctx):
+def action_transparent(ctx: AssetContext):
     ctx.cache_eggs()
     for file, tree in ctx.eggs.items():
         logger.info("%s: Adding transparency to: %s", ctx.name, file)
@@ -200,7 +200,7 @@ def action_transparent(ctx):
                 tex.add_child(new_node)
 
 
-def action_model_parent(ctx):
+def action_model_parent(ctx: AssetContext):
     ctx.cache_eggs()
     for eggtree in ctx.eggs.values():
         if not any(group for group in eggtree.findall("Group") if group.node_name == ctx.model_name):
@@ -215,7 +215,7 @@ def action_model_parent(ctx):
             eggtree.children.append(group_node)
 
 
-def action_transform(ctx, scale=None, rotate=None, translate=None):
+def action_transform(ctx: AssetContext, scale=None, rotate=None, translate=None):
     ctx.uncache_eggs()
     for file in ctx.files:
         if file.endswith(".egg"):
@@ -231,7 +231,7 @@ def action_transform(ctx, scale=None, rotate=None, translate=None):
                 os.replace(translated_file_name, file)
 
 
-def action_rmmat(ctx):
+def action_rmmat(ctx: AssetContext):
     ctx.cache_eggs()
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Removing materials from: %s", ctx.name, file)
@@ -246,7 +246,7 @@ def action_rmmat(ctx):
             uv.node_name = None
 
 
-def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, bitmask=None):
+def action_collide(ctx: AssetContext, flags="keep,descend", method="sphere", group_name=None, bitmask=None):
     group_name = group_name or ctx.model_name
     method = method.capitalize()
     flags = flags.replace(",", " ")
@@ -268,13 +268,14 @@ def action_collide(ctx, flags="keep,descend", method="sphere", group_name=None, 
             # Fun fact: Setting <Collide> if the group has non-poly objects will cause a segfault
             # when the egg file is read. So we have to delete every object that's not a polygon.
             # https://github.com/panda3d/panda3d/issues/1515
+            # This was fixed in modern Panda3D versions but not everyone has updated to that
             nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
             if nodes:
                 logger.warning("Found non-polygon objects while generating collisions, removing...")
                 groups[0].remove_nodes(set(nodes))
 
 
-def action_palettize(ctx, palette_size="1024", flags="", exclusions=""):
+def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusions=""):
     ctx.uncache_eggs()
     palette_size = int(palette_size)
     if palette_size & (palette_size - 1):
@@ -344,7 +345,7 @@ def action_palettize(ctx, palette_size="1024", flags="", exclusions=""):
     shutil.rmtree(palette_folder)
 
 
-def action_optchar(ctx, flags, expose):
+def action_optchar(ctx: AssetContext, flags, expose):
     ctx.uncache_eggs()
     if isinstance(flags, str):
         flags = flags.split(",")
@@ -366,7 +367,7 @@ def action_optchar(ctx, flags, expose):
         util.run_panda(ctx.putil_ctx, *command)
 
 
-def action_group_rename(ctx, **kwargs):
+def action_group_rename(ctx: AssetContext, **kwargs):
     ctx.cache_eggs()
     for tree in ctx.eggs.values():
         removals = set()
@@ -380,7 +381,7 @@ def action_group_rename(ctx, **kwargs):
         tree.remove_nodes(removals)
 
 
-def action_group_remove(ctx, pattern):
+def action_group_remove(ctx: AssetContext, pattern):
     ctx.cache_eggs()
     for tree in ctx.eggs.values():
         removals = set()
@@ -391,7 +392,7 @@ def action_group_remove(ctx, pattern):
         tree.remove_nodes(removals)
 
 
-def action_egg2bam(ctx, all_textures=""):
+def action_egg2bam(ctx: AssetContext, all_textures=""):
     all_textures = all_textures.lower() not in ("", "0", "false")
 
     files = []
@@ -403,7 +404,7 @@ def action_egg2bam(ctx, all_textures=""):
         logger.info("%s: Copying %s into the dist directory", ctx.name, file)
         files.append(file)
         # don't have to do pathlib stuff here because egg files only use unix paths
-        operations.set_texture_prefix(eggtree, f"{ctx.output_phase}/maps")
+        operations.set_texture_prefix(eggtree, ctx.output_texture_egg)
         for tex in eggtree.findall("Texture"):
             full_path = eggparse.sanitize_string(tex.get_child(0).value)
             filename = full_path.split("/")[-1]

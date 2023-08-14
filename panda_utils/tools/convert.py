@@ -71,14 +71,14 @@ def eggtrans(ctx: util.Context, path: str) -> None:
 
 
 def copy_errors(ctx: util.Context, path: str, errored_files: List[str]) -> bool:
-    partial_abspath = ctx.resources_path + "/" + "/".join(path.split("/")[:-1])
+    partial_abspath = pathlib.Path(ctx.resources_path, *path.replace("\\", "/").split("/")[:-1])
     for x in errored_files:
-        target_path = f"{partial_abspath}/{x}"
+        target_path = partial_abspath / x
         possible_paths = []
-        if os.path.exists(f"{ctx.resources_path}/{x}"):
-            possible_paths.append(f"{ctx.resources_path}/{x}")
-        if os.path.exists(f"{partial_abspath}/{x}"):
-            possible_paths.append(f"{partial_abspath}/{x}")
+        if os.path.exists(rpx := pathlib.Path(ctx.resources_path, x)):
+            possible_paths.append(rpx)
+        if os.path.exists(abp := partial_abspath / x):
+            possible_paths.append(abp)
 
         if not possible_paths:
             if util.interactive:
