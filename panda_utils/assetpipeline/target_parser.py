@@ -15,6 +15,8 @@ Dict parameters use {} notation, regardless of dict content.
 List parameters use [] notation, if the list is empty.
 List parameters make multiple calls, if the list is not empty. It may include other lists
 or dictionaries, but all of them will be considered empty.
+False parameters will not run the action at all.
+True parameters mean the parameter was not passed and the default one should be used.
 """
 
 
@@ -195,7 +197,7 @@ class ParametrizedStep(Step):
         self.default = default
 
     def make_string(self, ctx: StepContext):
-        param = self.default if ctx.parameter is False else ctx.parameter
+        param = self.default if ctx.parameter is True else ctx.parameter
         if param is False:
             return ""
         return self.name + stringify_param(param)
@@ -205,6 +207,8 @@ class Preexport(Step):
     name = "preexport"
 
     def make_string(self, ctx: StepContext):
+        if ctx.parameter is False:
+            return ""
         if any(preblend_regex.match(f) for f in ctx.files):
             return "preblend"
         return "blendrename"
@@ -251,7 +255,7 @@ PIPELINE_BLOCKOUTS = {
             ConstantStep("group_remove[]"),
             ParametrizedStep("palettize"),
             ParametrizedStep("optimize", default=None),
-            ConstantStep("egg2bam"),
+            ParametrizedStep("egg2bam", default=None),
         ],
     ),
     CallbackType.ACTOR: PipelineBlockout(
@@ -267,7 +271,8 @@ PIPELINE_BLOCKOUTS = {
             ConstantStep("group_remove[]"),
             ParametrizedStep("palettize"),
             ParametrizedStep("optimize", default=None),
-            ConstantStep("egg2bam"),
+            ParametrizedStep("optchar"),
+            ParametrizedStep("egg2bam", default=None),
         ],
     ),
     CallbackType.TWO_D_PALETTE: PipelineBlockout(
@@ -276,7 +281,7 @@ PIPELINE_BLOCKOUTS = {
             ParametrizedStep("downscale"),
             ParametrizedStep("texture_cards", default=None),
             ParametrizedStep("palettize", default="1024"),
-            ConstantStep("egg2bam"),
+            ParametrizedStep("egg2bam", default=None),
         ],
     )
 }
@@ -339,7 +344,7 @@ def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Un
     )
     pipeline_blockout = []
     for step in PIPELINE_BLOCKOUTS[callback_type].steps:
-        parameter = parameters.get(step.name, False)
+        parameter = parameters.get(step.name, True)
         if isinstance(parameter, list) and parameter:
             for item in parameter:
                 ctx.parameter = item

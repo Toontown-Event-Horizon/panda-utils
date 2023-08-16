@@ -16,7 +16,7 @@ logger = logging.getLogger("panda_utils.pipeline")
 preblend_regex = re.compile(r".*\.(fbx|obj)")
 regex_mcf = re.compile(r".*\[]$")
 regex_mcf_fallback = re.compile(r".*\{}$")
-command_regex = re.compile("^[a-zA-Z_-]+$")
+command_regex = re.compile("^[a-zA-Z_0-9-]+$")
 file_out_regex = re.compile(r".*((-[0-9]+)?|_palette_.+)\.(png|jpg|rgb)$")
 
 
