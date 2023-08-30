@@ -45,7 +45,11 @@ def __patch_filename(filename):
         return filename
 
     if osname == "Windows":
-        return filename[1] + ":\\" + filename[3:].replace("/", "\\")
+        if filename.startswith("/"):
+            # /c/users/file.jpg -> C:\\users\\file.jpg
+            return filename[1] + ":\\" + filename[3:].replace("/", "\\")
+
+        return filename.replace("/", "\\")
 
     raise RuntimeError(f"Unsupported OS: {osname}")
 
