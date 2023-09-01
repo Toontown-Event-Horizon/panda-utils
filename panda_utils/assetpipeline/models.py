@@ -412,6 +412,37 @@ def action_delete_vertex_colors(ctx: AssetContext):
             poly.remove_nodes(poly.findall("RGBA"))
 
 
+def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
+    speed_u, speed_v = str(speed_u), str(speed_v)
+    try:
+        speed_u_val = float(speed_u)
+        speed_v_val = float(speed_v)
+    except ValueError:
+        logger.error("%s: Invalid UV scroll: %s,%s", ctx.name, speed_u, speed_v)
+        return
+
+    if speed_u == speed_u_val and speed_v == speed_v_val:
+        logger.error("%s: Both UV scroll speeds cannot be 0", ctx.name)
+        return
+
+    logger.info("%s: Applying uv scroll to %s", ctx.name, group_name)
+    ctx.cache_eggs()
+    for eggtree in ctx.eggs.values():
+        # add uv scroll attribute
+        groups = [g for g in eggtree.findall("Group") if g.node_name == group_name]
+        if not groups:
+            logger.error("%s: Did not find group with name: %s", ctx.name, texture_name)
+            return
+        group = groups[0]
+
+        if speed_u_val:
+            scroll_u = eggparse.EggLeaf("Scalar", "scroll_u", speed_u)
+            group.add_child(scroll_u)
+        if speed_v_val:
+            scroll_v = eggparse.EggLeaf("Scalar", "scroll_v", speed_v)
+            group.add_child(scroll_v)
+
+
 def action_egg2bam(ctx: AssetContext, all_textures=""):
     all_textures = all_textures.lower() not in ("", "0", "false")
 
