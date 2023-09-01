@@ -29,13 +29,15 @@ def run_blender(cwd, file, script, *args):
 
 def build_asset_mapper(assets, name):
     output = {}
-    for counter, item in enumerate(sorted(assets)):
+    counter = 0
+    for item in sorted(assets):
         if "_palette_" in item:
             continue
 
         extension = item.split(".")[-1]
         new_file_name = f"{name}-{counter}.{extension}" if counter else f"{name}.{extension}"
         output[item] = new_file_name
+        counter += 1
     return output
 
 
