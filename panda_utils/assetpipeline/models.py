@@ -184,6 +184,13 @@ def action_optimize(ctx: AssetContext, map_textures="true"):
             old_value = eggparse.sanitize_string(tex_node.value)
             tex_node.value = texture_mapper.get(old_value, old_value)
 
+            uvn = {s for s in tex.findall("Scalar") if s.node_name == "uv-name"}
+            tex.remove_nodes(uvn)
+
+        for v in eggtree.findall("Vertex"):
+            for uv in v.findall("UV"):
+                uv.node_name = ""
+
         # We also need to remove the default cube and the cameras if they're present in the model
         nodeset = set()
         for node in eggtree.children:
