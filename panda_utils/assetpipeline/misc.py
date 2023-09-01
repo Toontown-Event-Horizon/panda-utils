@@ -24,3 +24,7 @@ def action_cts(ctx: AssetContext, injection_name):
         ctx.copy_ignores.add(file_name)
         shutil.copy(inject_path / file_name, file_name)
     logger.info("%s: Copied common texture set %s", ctx.name, injection_name)
+
+
+def action_uncache(ctx: AssetContext):
+    ctx.uncache_eggs()
