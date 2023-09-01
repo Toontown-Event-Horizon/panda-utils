@@ -109,6 +109,7 @@ class TargetOverride(BaseModel):
     parameters: dict[str, Parameter] = None
     callback_type: CallbackType = None
     active: bool = None
+    import_method: ImportMethod = None
 
 
 class SingleTarget(BaseModel):
@@ -321,11 +322,14 @@ def insert_extra_steps(pipeline: list[str], extra_steps):
 
 
 def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Union[None, str]:
+    exporter_option = target.import_method
     if override := target.overrides.get(model_name):
         callback_type = override.callback_type or target.callback_type
         extra_steps = override.extra_steps if override.extra_steps is not None else target.extra_steps
         parameters = override.parameters if override.parameters is not None else target.parameters
         active = override.active if override.active is not None else target.active
+        if override.import_method:
+            exporter_option = override.import_method
     else:
         callback_type = target.callback_type
         extra_steps = target.extra_steps
@@ -335,8 +339,8 @@ def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Un
     if not active:
         return None
 
-    if target.import_method:
-        ctx.exporter = target.import_method
+    if exporter_option:
+        ctx.exporter = exporter_option
     exporter_valid = ctx.exporter in PIPELINE_BLOCKOUTS[callback_type].exporters
     ctx.exporter_override = (
         ctx.exporter if exporter_valid
