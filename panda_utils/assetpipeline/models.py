@@ -473,8 +473,9 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
             group.add_child(scroll_v)
 
 
-def action_egg2bam(ctx: AssetContext, all_textures=""):
-    all_textures = all_textures.lower() not in ("", "0", "false")
+def action_egg2bam(ctx: AssetContext, flags="alltex"):
+    flags = flags.split(",")
+    all_textures = "alltex" in flags
 
     files = []
     # if followed by palettize we wont have eggs here
@@ -518,7 +519,7 @@ def action_egg2bam(ctx: AssetContext, all_textures=""):
     for file in files:
         if file.endswith(".egg"):
             logger.info("%s: Converting %s to bam", ctx.name, file)
-            egg2bam(ctx.putil_ctx, str(pathlib.Path(ctx.output_model_rel, file)))
+            egg2bam(ctx.putil_ctx, str(pathlib.Path(ctx.output_model_rel, file)), flags=flags)
             os.unlink(pathlib.Path(ctx.output_model, file))
     os.chdir(ctx.cwd)
     ctx.putil_ctx.working_path = ctx.cwd

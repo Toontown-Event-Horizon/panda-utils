@@ -102,8 +102,15 @@ def copy_errors(ctx: util.Context, path: str, errored_files: List[str]) -> bool:
     return True
 
 
-def egg2bam(ctx: util.Context, path: str, triplicate: bool = False) -> None:
-    output = util.run_panda(ctx, "egg2bam", path, "-o", path.replace(".egg", ".bam"))
+def egg2bam(ctx: util.Context, path: str, triplicate: bool = False, flags=()) -> None:
+    command = ["egg2bam", path, "-o", path.replace(".egg", ".bam")]
+    if "compress" in flags:
+        command.append("-ctex")
+    if "txo" in flags:
+        command.append("-txo")
+    if "rawtex" in flags:
+        command.append("-rawtex")
+    output = util.run_panda(ctx, *command)
     errored_files = ctx.regex_collection.not_found.findall(output)
     if errored_files:
         if not copy_errors(ctx, path, errored_files):
