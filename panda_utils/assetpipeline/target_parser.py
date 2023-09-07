@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+import os
 from enum import Enum
 from typing import Union
 
@@ -7,6 +8,7 @@ from pydantic import BaseModel
 
 from panda_utils.assetpipeline.commons import command_regex, preblend_regex, regex_mcf, regex_mcf_fallback
 
+IS_PRODUCTION = bool(os.getenv("PANDA_UTILS_PRODUCTION"))
 Parameter = Union[None, str, dict, list, bool]
 """
 String parameters get passed to the pipeline as is.
@@ -102,6 +104,11 @@ class ExtraStep(BaseModel):
     """
 
     parameters: Parameter = None
+
+    production: bool = None
+    """
+    Steps that have this at false will only run in dev, steps that have this at true will only run in prod.
+    """
 
 
 class TargetOverride(BaseModel):
@@ -299,6 +306,9 @@ def step_matches(step: str, find: str):
 
 
 def insert_extra_step(pipeline: list[str], name: str, item: ExtraStep):
+    if item.production is not None and item.production != IS_PRODUCTION:
+        return
+
     insert_step = -1
     for index, step in enumerate(pipeline):
         if step_matches(step, item.after):
