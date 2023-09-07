@@ -431,7 +431,7 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
         # add uv scroll attribute
         groups = [g for g in eggtree.findall("Group") if g.node_name == group_name]
         if not groups:
-            logger.error("%s: Did not find group with name: %s", ctx.name, texture_name)
+            logger.error("%s: Did not find group with name: %s", ctx.name, group_name)
             return
         group = groups[0]
 
