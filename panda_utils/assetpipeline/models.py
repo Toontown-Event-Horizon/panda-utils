@@ -310,7 +310,7 @@ def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusion
     all_png_files = [file for file in ctx.files if file.endswith(".png")]
     included_png_files, excluded_png_files = [], []
     for file in all_png_files:
-        if file in exclusions:
+        if any(fnmatch.fnmatch(file, exc) for exc in exclusions):
             excluded_png_files.append(file)
         else:
             included_png_files.append(file)
