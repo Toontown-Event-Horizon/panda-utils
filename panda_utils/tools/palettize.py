@@ -40,7 +40,7 @@ def palettize(
 
     file_list = set(util.get_file_list(ctx.resources_path, f"{map_path}/{output}"))
     existing_file_list = set(util.get_file_list(ctx.working_path, f"{map_path}/{output}"))
-    logger.info(f"Found {len(file_list - existing_file_list)} files, copying to the workspace...")
+    logger.info("Found %d files, copying to the workspace...", len(file_list - existing_file_list))
     for x in file_list:
         if not os.path.exists(f"{ctx.working_path}/{map_path}/{output}/{x}"):
             shutil.copy(f"{ctx.resources_path}/{map_path}/{output}/{x}", f"{ctx.working_path}/{map_path}/{output}/{x}")

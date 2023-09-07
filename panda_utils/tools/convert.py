@@ -89,13 +89,13 @@ def copy_errors(ctx: util.Context, path: str, errored_files: List[str]) -> bool:
             else:
                 p2 = None
             if not p2:
-                logger.error(f"Unable to get {x} from anywhere, aborting.")
+                logger.error("Unable to get %s from anywhere, aborting.", x)
                 return False
             possible_paths.append(p2)
 
         newest_file = max(possible_paths, key=os.path.getctime)
         if newest_file != target_path:
-            logger.info(f"Copying {x} from resources.")
+            logger.info("Copying %s from resources.", x)
             pathlib.Path(target_path).parent.mkdir(exist_ok=True, parents=True)
             shutil.copy(newest_file, target_path)
 

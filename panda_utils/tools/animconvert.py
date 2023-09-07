@@ -10,7 +10,7 @@ def animation_names(ctx: util.Context, path: str, output: str, conversion_names:
     eggpath = path.replace(".bam", ".egg")
 
     util.run_panda(ctx, "bam2egg", "-o", eggpath, path)
-    logger.info(f"Converted file {path} to egg, reading data...")
+    logger.info("Converted file %s to egg, reading data...", path)
 
     with open(eggpath) as f:
         data = f.readlines()
@@ -20,7 +20,7 @@ def animation_names(ctx: util.Context, path: str, output: str, conversion_names:
     eggtree = eggparse.egg_tokenize(data)
     for node in eggtree.findall("Table"):
         if converted_name := conversion_names.get(node.node_name):
-            logger.info(f"Converting {node.node_name} to {converted_name}")
+            logger.info("Converting %s to %s", node.node_name, converted_name)
             node.node_name = converted_name
 
     operations.add_comment(eggtree, "Toontown-Event-Horizon/PandaUtils Animation converter")
