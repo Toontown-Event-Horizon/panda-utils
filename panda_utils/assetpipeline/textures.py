@@ -14,7 +14,8 @@ def action_downscale(ctx: AssetContext, size, bbox=-1, flags="", name=""):
 
     bbox = int(bbox)
     flag_list = flags.split(",")
-    downscale(ctx.putil_ctx, ".", target_size, True, bbox, "truecenter" in flag_list, False, name, False)
+    force = bbox >= 0 or "truecenter" in flag_list or "force" in flag_list
+    downscale(ctx.putil_ctx, ".", target_size, force, bbox, "truecenter" in flag_list, False, name, False)
 
 
 def action_texture_cards(ctx: AssetContext, size=None):

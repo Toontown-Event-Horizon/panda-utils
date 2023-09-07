@@ -43,7 +43,7 @@ def downscale(
     for x in files:
         img = Image.open(f"{original_path}/{x}")
         if not ignore_current_scale and img.width == scale and img.height == scale:
-            logger.info(f"Skipping {x} as it is already resized")
+            logger.info("Skipping %s as it is already resized", x)
             continue
 
         if do_backup:
@@ -68,7 +68,7 @@ def downscale(
 
         if img.width != img.height:
             if not force and bbox == -1:
-                logger.warning(f"Skipping {x} due to invalid size: width {img.width}, height {img.height}")
+                logger.info("Skipping %s due to invalid size: width %d, height %d", x, img.width, img.height)
                 continue
 
             # if we are asked to force downscale, try to add space, and center the image horizontally
@@ -90,5 +90,9 @@ def downscale(
                     img2.paste(img, (height_delta, x_coord, even_fheight, even_fheight - x_coord))
             img = img2
 
-        logger.info(f"Rescaling {x}")
+        if img.width < scale:
+            logger.info("Skipping %s due to size %d being smaller than the target %d", x, img.width, scale)
+            continue
+
+        logger.info("Rescaling %s", x)
         img.resize((scale, scale)).save(f"{original_path}/{x}")
