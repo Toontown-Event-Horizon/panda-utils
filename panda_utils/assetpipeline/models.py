@@ -17,6 +17,7 @@ from panda_utils.util import get_data_file_path
 
 image_regex = re.compile(r".*\.(png|jpg|rgb)")
 logger = logging.getLogger("panda_utils.pipeline.models")
+joint_regex = re.compile(r"^(.+)\[([xyzhprijkabc]+)]$")
 
 
 def run_blender(cwd, file, script, *args):
@@ -358,26 +359,55 @@ def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusion
     shutil.rmtree(palette_folder)
 
 
-def action_optchar(ctx: AssetContext, flags, expose):
+def action_optchar(ctx: AssetContext, flags="", expose="", zero=""):
     ctx.uncache_eggs()
-    if isinstance(flags, str):
+    if isinstance(flags, str) and flags:
         flags = flags.split(",")
-    if isinstance(expose, str):
+    if isinstance(expose, str) and expose:
         expose = expose.split(",")
+    if isinstance(zero, str) and zero:
+        temp_zero = zero.split(",")
+        zero = []
+        for joint in temp_zero:
+            if m := joint_regex.match(joint):
+                joint, coords = m.group(1), m.group(2)
+                zero.append((joint, coords))
+            else:
+                zero.append((joint, ""))
 
     file = ctx.model_name + ".egg"
-    if file in ctx.files:
-        command = ["egg-optchar", file, "-inplace", "-keepall"]
+    main_file_processed = flags or expose
+    animations_processed = zero
 
-        for flag in flags:
-            command.append("-flag")
-            command.append(flag)
+    if main_file_processed:
+        if file in ctx.files:
+            # Process the main model file.
+            command = ["egg-optchar", file, "-inplace", "-keepall"]
 
-        for joint in expose:
-            command.append("-expose")
-            command.append(joint)
+            if flags:
+                for flag in flags:
+                    command.append("-flag")
+                    command.append(flag)
 
-        util.run_panda(ctx.putil_ctx, *command)
+            if expose:
+                for joint in expose:
+                    command.append("-expose")
+                    command.append(joint)
+
+            util.run_panda(ctx.putil_ctx, *command)
+
+    if animations_processed:
+        for eggfile in ctx.files:
+            # Process the model's animations.
+            if eggfile.endswith(".egg") and eggfile != file:
+                command = ["egg-optchar", eggfile, "-inplace", "-keepall"]
+
+                if zero:
+                    for joint, coords in zero:
+                        command.append("-zero")
+                        command.append(joint + ("," + coords if coords else ""))
+
+                util.run_panda(ctx.putil_ctx, *command)
 
 
 def action_group_rename(ctx: AssetContext, **kwargs):
