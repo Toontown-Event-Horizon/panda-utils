@@ -156,6 +156,7 @@ def action_yabee(ctx: AssetContext, **kwargs):
             logger.info("%s: Exporting through YABEE: %s", ctx.name, file)
             full_path = pathlib.Path(ctx.cwd, file)
             egg_name = file[:-6] + ".egg"
+            run_blender(ctx.cwd, full_path, "blender/patch_paths.py")
             run_blender(ctx.cwd, full_path, "blender/export_with_yabee.py", egg_name, *args_converted)
 
             target_name = ctx.model_name + ".egg"
