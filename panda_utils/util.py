@@ -9,6 +9,7 @@ import sys
 from typing import List
 
 logger = logging.getLogger("panda_utils.palettize")
+always_debug = bool(os.getenv("PANDA_UTILS_DEBUG"))
 
 
 class RegexCollection:
@@ -90,7 +91,7 @@ def run_panda(ctx: Context, command: str, *args: str, timeout: int = 10, debug: 
     out = process.communicate(timeout=timeout)
     bts = out[1] if isinstance(out, tuple) else out
     out_str = bts.decode("utf-8")
-    if process.returncode or debug:
+    if process.returncode or debug or always_debug:
         logger.warning(out_str)
     return out_str
 
