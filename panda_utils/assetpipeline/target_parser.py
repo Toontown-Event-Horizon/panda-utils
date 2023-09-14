@@ -280,7 +280,7 @@ PIPELINE_BLOCKOUTS = {
             ConstantStep("group_remove[]"),
             ParametrizedStep("palettize"),
             ParametrizedStep("optimize", default=None),
-            ParametrizedStep("optchar"),
+            ParametrizedStep("optchar", default=[]),
             ConstantStep("uvscroll[]"),
             ParametrizedStep("egg2bam", default=None),
         ],
