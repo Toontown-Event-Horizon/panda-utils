@@ -474,9 +474,9 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
             group.add_child(scroll_v)
 
 
-def action_egg2bam(ctx: AssetContext, flags="alltex"):
+def action_egg2bam(ctx: AssetContext, flags="filter"):
     flags = flags.split(",")
-    all_textures = "alltex" in flags
+    all_textures = "filter" not in flags
 
     files = []
     # if followed by palettize we wont have eggs here
