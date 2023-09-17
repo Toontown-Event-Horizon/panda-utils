@@ -87,7 +87,7 @@ def action_optimize(ctx: AssetContext, flags=""):
                 for uv in v.findall("UV"):
                     uv.node_name = ""
 
-        if keep_transparent_vertices:
+        if not keep_transparent_vertices:
             logger.info("%s: Fixing transparent vertex colors: %s", ctx.name, file)
             for v in eggtree.findall("Vertex"):
                 for rgb in v.findall("RGBA"):
