@@ -47,6 +47,7 @@ def main(enable_logging=False):
         {"options": {"panda3d_path_inherit": 1}, "paths": {"resources": resources_path}}
     )
 
+    ctx.load_model_config()
     for method in pipeline:
         if not ctx.valid:
             logger.warning("The context for %s was aborted", ctx.name)

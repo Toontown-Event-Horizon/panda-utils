@@ -49,6 +49,7 @@ class AssetContext:
         self.name = self.model_name.replace("-", " ").replace("_", " ").title()
         self.eggs = None
         self.copy_ignores = set()
+        self.model_config = {}
 
     def cache_eggs(self):
         if self.eggs is not None:
@@ -82,29 +83,34 @@ class AssetContext:
             return None
         return injections_base_path / name
 
-    def run_action_through_config(self, action, name, use_fallback):
+    def load_model_config(self):
         if YAML_CONFIG_FILENAME not in self.files:
             data = {}
         else:
             with open(YAML_CONFIG_FILENAME) as f:
                 data = yaml.safe_load(f)
 
-        if name not in data:
+        self.model_config = data
+
+    def run_action_through_config(self, action, name, use_fallback):
+        if name not in self.model_config:
             if use_fallback:
                 self.run_action(action, {})
             return
 
-        args = data[name]
+        args = self.model_config[name]
         if isinstance(args, list):
             for kwargs in args:
                 self.run_action(action, kwargs)
         else:
             self.run_action(action, args)
 
-    def run_action(self, action, args):
+    def run_action(self, action, args, convert_list=False):
         if isinstance(args, dict):
             action(self, **args)
         elif isinstance(args, str):
             action(self, args)
+        elif convert_list and (isinstance(args, list) or isinstance(args, tuple)):
+            action(self, *args)
         else:
             logger.warning("%s: Invalid configured arguments: %s (expected dict, or str)", self.name, type(args))

@@ -8,10 +8,14 @@ from panda_utils.assetpipeline.commons import AssetContext
 logger = logging.getLogger("panda_utils.pipeline.misc")
 
 
-def action_script(ctx: AssetContext, script_file):
+def action_script(ctx: AssetContext, script_file, *arguments):
     logger.info("%s: Running script %s", ctx.name, script_file)
     mod = importlib.import_module(f"scripts.{script_file}")
-    mod.run(ctx)
+
+    if script_file[-2:] in ("[]", "{}"):
+        ctx.run_action_through_config(mod.run, f"script/{script_file}", script_file[-2:] == "{}")
+    else:
+        ctx.run_action(mod.run, arguments, convert_list=True)
 
 
 def action_cts(ctx: AssetContext, injection_name):
