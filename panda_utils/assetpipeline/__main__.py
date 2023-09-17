@@ -4,6 +4,7 @@ import pathlib
 import shutil
 import sys
 
+from panda_utils import util
 from panda_utils.assetpipeline import imports
 from panda_utils.assetpipeline.commons import (
     AssetContext, BUILT_FOLDER, INTERMEDIATE_FOLDER, regex_mcf,
@@ -72,4 +73,4 @@ def main(enable_logging=False):
 
 
 if __name__ == "__main__":
-    main(bool(os.getenv("PANDA_UTILS_LOGGING")))
+    main(util.get_debug(util.LoggingScope.PIPELINE))

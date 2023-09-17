@@ -6,10 +6,32 @@ import pathlib
 import subprocess
 import re
 import sys
+from enum import Enum
 from typing import List
 
 logger = logging.getLogger("panda_utils.palettize")
-always_debug = bool(os.getenv("PANDA_UTILS_DEBUG"))
+
+
+class LoggingScope(Enum):
+    PANDA3D = "panda"
+    PIPELINE = "pipeline"
+    BLENDER = "blender"
+
+
+def get_debug(scope: LoggingScope):
+    var_names = {
+        LoggingScope.PANDA3D: "PANDA_UTILS_P3D_DEBUG",
+        LoggingScope.PIPELINE: "PANDA_UTILS_LOGGING",
+        LoggingScope.BLENDER: "PANDA_UTILS_BLENDER_LOGGING"
+    }
+    if os.getenv(var_names[scope]):
+        return True
+
+    flags = os.getenv("PANDA_UTILS_DEBUG", "").split(",")
+    if scope in flags or "all" in flags:
+        return True
+
+    return False
 
 
 class RegexCollection:
@@ -91,7 +113,7 @@ def run_panda(ctx: Context, command: str, *args: str, timeout: int = 10, debug: 
     out = process.communicate(timeout=timeout)
     bts = out[1] if isinstance(out, tuple) else out
     out_str = bts.decode("utf-8")
-    if process.returncode or debug or always_debug:
+    if process.returncode or debug or get_debug(LoggingScope.PANDA3D):
         logger.warning(out_str)
     return out_str
 

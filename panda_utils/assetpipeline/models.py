@@ -24,7 +24,7 @@ def run_blender(cwd, file, script, *args):
     args = [util.choose_binary("blender"), "--background", "--python", get_data_file_path(script), "--", *args]
     if file is not None:
         args.insert(1, file)
-    stdout_pipe = subprocess.DEVNULL if not os.getenv("PANDA_UTILS_BLENDER_LOGGING") else None
+    stdout_pipe = subprocess.DEVNULL if not util.get_debug(util.LoggingScope.BLENDER) else None
     subprocess.run(args, stdout=stdout_pipe, cwd=cwd)
 
 
