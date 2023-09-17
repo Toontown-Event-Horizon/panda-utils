@@ -164,8 +164,12 @@ def action_yabee(ctx: AssetContext, **kwargs):
                 shutil.move(egg_name, target_name)
 
 
-def action_optimize(ctx: AssetContext, map_textures="true"):
-    map_textures = map_textures.lower() not in ("", "0", "false")
+def action_optimize(ctx: AssetContext, flags=""):
+    if isinstance(flags, str):
+        flags = flags.split(",")
+    keep_texture_names = "keep_texture_names" in flags
+    keep_uv_names = "keep_uv_names" in flags
+    keep_transparent_vertices = "keep_transparent_vertices" in flags
 
     textures = set()
     ctx.cache_eggs()
@@ -173,7 +177,7 @@ def action_optimize(ctx: AssetContext, map_textures="true"):
         for tex in tree.findall("Texture"):
             textures.add(eggparse.sanitize_string(tex.get_child(0).value))
 
-    texture_mapper = build_asset_mapper(textures, ctx.model_name) if map_textures else {}
+    texture_mapper = build_asset_mapper(textures, ctx.model_name) if not keep_texture_names else {}
     for fnold, fnnew in texture_mapper.items():
         fnold = __patch_filename(fnold)
         shutil.move(fnold, fnnew)
@@ -189,9 +193,19 @@ def action_optimize(ctx: AssetContext, map_textures="true"):
             uvn = {s for s in tex.findall("Scalar") if s.node_name == "uv-name"}
             tex.remove_nodes(uvn)
 
-        for v in eggtree.findall("Vertex"):
-            for uv in v.findall("UV"):
-                uv.node_name = ""
+        if not keep_uv_names:
+            for v in eggtree.findall("Vertex"):
+                for uv in v.findall("UV"):
+                    uv.node_name = ""
+
+        if keep_transparent_vertices:
+            logger.info("%s: Fixing transparent vertex colors: %s", ctx.name, file)
+            for v in eggtree.findall("Vertex"):
+                for rgb in v.findall("RGBA"):
+                    color = rgb.node_value
+                    if color == "0 0 0 0":
+                        # For some reason (0, 0, 0, 0) is the default vertex color in blender. Which is wrong.
+                        rgb.node_value = "1 1 1 1"
 
         # We also need to remove the default cube and the cameras if they're present in the model
         nodeset = set()
