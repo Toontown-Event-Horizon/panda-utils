@@ -72,7 +72,7 @@ class EggLeaf(EggNode):
     def __init__(self, node_type, node_name, node_value):
         self.node_type = node_type
         self.node_name = (node_name or "").strip()
-        self.node_value = node_value
+        self.node_value = node_value.strip()
 
     def __repr__(self):
         if self.node_name:
