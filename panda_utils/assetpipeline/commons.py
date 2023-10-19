@@ -31,7 +31,9 @@ class AssetContext:
         self.output_texture_rel = pathlib.Path(pathlib.PurePosixPath(texture_output.replace("\\", "/")))
         self.output_model = pathlib.Path(BUILT_FOLDER, self.output_model_rel).absolute()
         self.output_texture = pathlib.Path(BUILT_FOLDER, self.output_texture_rel).absolute()
+        self.built_folder_absolute = pathlib.Path(BUILT_FOLDER).absolute()
         self.built_model_path = pathlib.Path(self.output_model_rel, self.model_name)
+        self.relative_mode = False
 
         self.output_texture_egg = str(pathlib.PurePosixPath(texture_output))
         try:
@@ -40,6 +42,7 @@ class AssetContext:
             pass
         else:
             self.output_texture_egg = other_option
+            self.relative_mode = True
         if self.output_texture_egg.startswith("/") or "\\" in self.output_texture_egg:
             raise ValueError(f"Unexpected absolute path for the texture output: {self.output_texture_egg}!")
 

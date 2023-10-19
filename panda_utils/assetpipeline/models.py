@@ -394,21 +394,24 @@ def action_egg2bam(ctx: AssetContext, flags="filter"):
         for tex in eggtree.findall("Texture"):
             full_path = eggparse.sanitize_string(tex.get_child(0).value)
             filename = full_path.split("/")[-1]
-            # The first two components of full_path we can safely ignore because they're phase_X/maps
-            copied_files[filename] = pathlib.Path(pathlib.PurePosixPath(full_path.split("/", 2)[2]))
+            pure_path = pathlib.PurePosixPath(full_path)
+
+            if ctx.relative_mode:
+                pure_path = ctx.output_texture_rel / pure_path
+            copied_files[filename] = pure_path
 
     if all_textures:
-        # By default, we will be copying the textures into the `phase_X/maps/` folder
-        # But if the egg file tells us to copy them into `phase_X/maps/subfolder/` then so be it
+        # By default, we will be copying the textures into the `{output_texture}/` folder
+        # But if the egg file tells us to copy them into `{output_texture}/subfolder/` then so be it
         for filename in ctx.files:
             if filename not in copied_files and image_regex.match(filename):
-                copied_files[filename] = filename
+                copied_files[filename] = ctx.output_texture_rel / filename
 
     # Under no circumstances, we will be copying common texture set into the built/ folder.
     # This should be done by some other thing *before* we run the pipeline.
     copied_files = {cf: target for cf, target in copied_files.items() if cf not in ctx.copy_ignores}
     for filename, target in copied_files.items():
-        copy_path = pathlib.Path(ctx.output_texture, target)
+        copy_path = pathlib.Path(ctx.built_folder_absolute, target)
         copy_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(filename, copy_path)
 
