@@ -113,6 +113,9 @@ def egg2bam(ctx: util.Context, path: str, triplicate: bool = False, flags=()) ->
     output = util.run_panda(ctx, *command)
     errored_files = ctx.regex_collection.not_found.findall(output)
     if errored_files:
+        if "no-copyerrors" in flags:
+            logger.error("Textures are missing: %s! Aborting.", errored_files)
+            return
         if not copy_errors(ctx, path, errored_files):
             return
         util.run_panda(ctx, "egg2bam", path, "-o", path.replace(".egg", ".bam"))
@@ -121,7 +124,7 @@ def egg2bam(ctx: util.Context, path: str, triplicate: bool = False, flags=()) ->
         build_lods(ctx, path.replace(".egg", ".bam"))
 
 
-def bam2egg(ctx: util.Context, path: str) -> None:
+def bam2egg(ctx: util.Context, path: str, flags=()) -> None:
     abspath, need_copy = pathlib.Path(path), False
     if not abspath.exists():
         abspath, need_copy = pathlib.Path(ctx.resources_path, path), True
@@ -138,6 +141,9 @@ def bam2egg(ctx: util.Context, path: str) -> None:
         patch_egg(ctx, path.replace("bam", "egg"))
         return
 
+    if "no-copyerrors" in flags:
+        logger.error("Textures are missing: %s! Aborting.", errored_files)
+        return
     if not copy_errors(ctx, path, errored_files):
         return
     logger.info("Recompiling egg...")

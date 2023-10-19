@@ -50,7 +50,7 @@ def action_bam2egg(ctx: AssetContext):
     for file in ctx.files:
         if file.endswith(".bam"):
             logger.info("%s: Converting %s from Bam to Egg", ctx.name, file)
-            bam2egg(ctx.putil_ctx, file)
+            bam2egg(ctx.putil_ctx, file, ["no-copyerrors"])
 
 
 def action_optimize(ctx: AssetContext, flags=""):
@@ -379,6 +379,7 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
 
 def action_egg2bam(ctx: AssetContext, flags="filter"):
     flags = flags.split(",")
+    flags.append("no-copyerrors")
     all_textures = "filter" not in flags
 
     files = []
