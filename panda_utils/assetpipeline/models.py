@@ -391,14 +391,19 @@ def action_egg2bam(ctx: AssetContext, flags="filter"):
         logger.info("%s: Copying %s into the dist directory", ctx.name, file)
         files.append(file)
         # don't have to do pathlib stuff here because egg files only use unix paths
-        operations.set_texture_prefix(eggtree, ctx.output_texture_egg)
+
+        # Wizz: you see there is a problem with set_texture_prefix here
+        #       that it applies its changes to paths relative to the "." folder
+        #       which it probably shouldn't do because it breaks models with complicated texture paths
+        only_absolute = ctx.relative_mode and ctx.output_model_rel == ctx.output_texture_rel
+        operations.set_texture_prefix(eggtree, ctx.output_texture_egg, only_absolute=only_absolute)
         for tex in eggtree.findall("Texture"):
             full_path = eggparse.sanitize_string(tex.get_child(0).value)
             filename = full_path.split("/")[-1]
             pure_path = pathlib.PurePosixPath(full_path)
 
             if ctx.relative_mode:
-                pure_path = ctx.output_texture_rel / pure_path
+                pure_path = ctx.output_model_rel / pure_path
             copied_files[filename] = pure_path
 
     if all_textures:
@@ -414,6 +419,7 @@ def action_egg2bam(ctx: AssetContext, flags="filter"):
     for filename, target in copied_files.items():
         copy_path = pathlib.Path(ctx.built_folder_absolute, target)
         copy_path.parent.mkdir(parents=True, exist_ok=True)
+        # logger.info("%s -> %s", filename, copy_path)
         shutil.copy(filename, copy_path)
 
     ctx.uncache_eggs()
