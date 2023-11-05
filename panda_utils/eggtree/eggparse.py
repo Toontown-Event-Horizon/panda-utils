@@ -135,12 +135,13 @@ def sanitize_string(val):
 
 single_line_leaf_regex = re.compile(r"<([A-Za-z0-9_$*]+)> +([-a-z0-9A-Z_.]+ )?\{ ?(.+) ?}")
 preline_regex = re.compile(r"<([A-Za-z0-9_$]+)> +([-a-z0-9A-Z_.<>\" ]+ )?\{([^\n]*)")
+recursive_nodes = ["VertexRef", "Distance"]
 
 
 def subtree_tokenize(lines: List[str]):
     last_line = lines[-1].strip()
     if len(lines) == 1:
-        if last_line.count("}") > 1 and not last_line.startswith("<VertexRef>"):
+        if last_line.count("}") > 1 and not any(last_line.startswith(f"<{x}>") for x in recursive_nodes):
             parts = [x + "}" for x in last_line.split("}")[:-1]]
             nodes = []
             for part in parts:
@@ -152,7 +153,7 @@ def subtree_tokenize(lines: List[str]):
             raise ValueError(f"subtree_tokenize: Invalid single-line subtree: {lines[0]}")
 
         final = match.group(3)
-        if "}" not in final or match.group(1) == "VertexRef":
+        if "}" not in final or match.group(1) in recursive_nodes:
             return [EggLeaf(match.group(1), match.group(2), final)]
         return [EggBranch(match.group(1), match.group(2), EggTree(*subtree_tokenize([final])))]
 
