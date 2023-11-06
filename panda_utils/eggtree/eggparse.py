@@ -66,10 +66,10 @@ class EggNode(abc.ABC):
 
 class EggString(EggNode):
     def __init__(self, value):
-        self.value = self.convert_string_from_egg(value)
+        self.value = value
 
     def __repr__(self):
-        return self.convert_string_to_egg(self.value)
+        return self.value
 
     def findall(self, node_type):
         return []
