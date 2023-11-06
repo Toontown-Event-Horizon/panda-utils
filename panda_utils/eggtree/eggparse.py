@@ -50,13 +50,26 @@ class EggNode(abc.ABC):
     def get_child(self, index):
         pass
 
+    @staticmethod
+    def convert_string_from_egg(value):
+        if not value:
+            return ""
+        return value.strip("\"' ")
+
+    @staticmethod
+    def convert_string_to_egg(value):
+        value = value.strip()
+        if " " in value:
+            return f'"{value}"'
+        return value
+
 
 class EggString(EggNode):
     def __init__(self, value):
-        self.value = value
+        self.value = self.convert_string_from_egg(value)
 
     def __repr__(self):
-        return self.value
+        return self.convert_string_to_egg(self.value)
 
     def findall(self, node_type):
         return []
@@ -71,12 +84,12 @@ class EggString(EggNode):
 class EggLeaf(EggNode):
     def __init__(self, node_type, node_name, node_value):
         self.node_type = node_type
-        self.node_name = (node_name or "").strip()
+        self.node_name = self.convert_string_from_egg(node_name)
         self.node_value = node_value.strip()
 
     def __repr__(self):
         if self.node_name:
-            return f"<{self.node_type}> {self.node_name.strip()} {{ {self.node_value.strip()} }}"
+            return f"<{self.node_type}> {self.convert_string_to_egg(self.node_name)} {{ {self.node_value.strip()} }}"
         return f"<{self.node_type}> {{ {self.node_value.strip()} }}"
 
     def findall(self, node_type):
@@ -94,12 +107,12 @@ class EggLeaf(EggNode):
 class EggBranch(EggNode):
     def __init__(self, node_type, node_name, children):
         self.node_type = node_type
-        self.node_name = (node_name or "").strip()
+        self.node_name = self.convert_string_from_egg(node_name)
         self.children = children
 
     def __repr__(self):
         if self.node_name:
-            preamble = f"<{self.node_type}> {self.node_name} {{"
+            preamble = f"<{self.node_type}> {self.convert_string_to_egg(self.node_name)} {{"
         else:
             preamble = f"<{self.node_type}> {{"
 
