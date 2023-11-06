@@ -6,15 +6,29 @@ body:
   - type: markdown
     attributes:
       value: "Thanks for taking the time to fill out this bug report!"
-  - type: input
-    id: version
+  - type: dropdown
+    id: os
     attributes:
-      label: Panda Utils Version
-      description: |
-        Can be obtained by running `pip freeze | grep panda_utils` (Linux, MacOS)
-        or `pip freeze | select-string panda_utils` (Windows)
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - Mac OS
+        - Other
     validations:
       required: true
+  - type: textarea
+    id: pip-freeze
+    attributes:
+      label: Output of `pip freeze`
+      description: This will dump all of the Python modules installed in the environment. If you have a lot of packages installed in your environment, please take your time to remove the unrelated ones from the output. The relevant packages include anything containing `panda`, as well as `doit`, `numpy` and `pydantic`.
+    validations:
+      required: true
+  - type: input
+    id: blender-version
+    attributes:
+      label: Blender Version
+      description: Include if Blender is relevant to the issue (f.e. the YABEE step is causing a crash).
   - type: textarea
     id: description
     attributes:
@@ -34,16 +48,11 @@ body:
   - type: textarea
     id: pipeline-command
     attributes:
-      label: Pipeline Command and Operating System
+      label: Pipeline Command and relevant Egg file
       description: |
         If you use Asset Pipeline manually, put the command you're running here.
         If you use Asset Composer, build your model with environmental variable `PANDA_UTILS_LOGGING=1` and put the output here.
-        In both of these cases, also add the operating system you're using.
         Otherwise, leave this empty.
   - type: markdown
     attributes:
-      value: |
-        If an Egg file is relevant to this issue (eggtree/pipeline module is used),
-        please attach the file after creating the issue.
-        Egg syntax is not documented very well and different asset generators output differently formatted files,
-        so this is important to debug any eggtree-related issues.
+      value: If an Egg file is relevant to this issue (eggtree/pipeline module is used), please attach the file above (you can cut unrelated parts before doing so). If you're using Pipeline, the Egg file will be contained in the intermediate folder. The egg syntax is not documented very well and different asset generators output differently formatted files, so this is important to debug any eggtree-related issues.
