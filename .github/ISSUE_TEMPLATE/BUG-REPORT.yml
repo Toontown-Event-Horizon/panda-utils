@@ -1,0 +1,49 @@
+name: Bug Report
+description: File a bug report
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for taking the time to fill out this bug report!"
+  - type: input
+    id: version
+    attributes:
+      label: Panda Utils Version
+      description: |
+        Can be obtained by running `pip freeze | grep panda_utils` (Linux, MacOS)
+        or `pip freeze | select-string panda_utils` (Windows)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+    validations:
+      required: true
+  - type: checkboxes
+    id: modules
+    attributes:
+      label: Used modules
+      description: What modules of Panda Utils are you using?
+      options:
+        - label: '[Egg Tree Parser](https://panda-utils.readthedocs.io/en/latest/egg-trees/introduction.html)'
+        - label: '[Asset Pipeline](https://panda-utils.readthedocs.io/en/latest/asset-pipeline/introduction.html)'
+        - label: '[Asset Composer](https://panda-utils.readthedocs.io/en/latest/asset-pipeline/composer.html)'
+  - type: textarea
+    id: version
+    attributes:
+      label: Pipeline Command and Operating System
+      description: |
+        If you use Asset Pipeline manually, put the command you're running here.
+        If you use Asset Composer, build your model with environmental variable `PANDA_UTILS_LOGGING=1` and put the output here.
+        In both of these cases, also add the operating system you're using.
+        Otherwise, leave this empty.
+  - type: markdown
+    attributes:
+      value: |
+        If an Egg file is relevant to this issue (eggtree/pipeline module is used),
+        please attach the file after creating the issue.
+        Egg syntax is not documented very well and different asset generators output differently formatted files,
+        so this is important to debug any eggtree-related issues.
