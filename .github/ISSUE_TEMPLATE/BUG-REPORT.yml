@@ -32,7 +32,7 @@ body:
         - label: '[Asset Pipeline](https://panda-utils.readthedocs.io/en/latest/asset-pipeline/introduction.html)'
         - label: '[Asset Composer](https://panda-utils.readthedocs.io/en/latest/asset-pipeline/composer.html)'
   - type: textarea
-    id: version
+    id: pipeline-command
     attributes:
       label: Pipeline Command and Operating System
       description: |
