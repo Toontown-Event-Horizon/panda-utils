@@ -73,16 +73,16 @@ def action_optimize(ctx: AssetContext, flags=""):
 
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Optimizing model: %s", ctx.name, file)
-        # The first thing we should do is patch the texture paths
-        for tex in eggtree.findall("Texture"):
-            tex_node = tex.get_child(0)
-            old_value = eggparse.sanitize_string(tex_node.value)
-            tex_node.value = texture_mapper.get(old_value, old_value)
-
-            uvn = {s for s in tex.findall("Scalar") if s.node_name == "uv-name"}
-            tex.remove_nodes(uvn)
 
         if not keep_uv_names:
+            for tex in eggtree.findall("Texture"):
+                tex_node = tex.get_child(0)
+                old_value = eggparse.sanitize_string(tex_node.value)
+                tex_node.value = texture_mapper.get(old_value, old_value)
+
+                uvn = {s for s in tex.findall("Scalar") if s.node_name == "uv-name"}
+                tex.remove_nodes(uvn)
+
             for v in eggtree.findall("Vertex"):
                 for uv in v.findall("UV"):
                     uv.node_name = ""
