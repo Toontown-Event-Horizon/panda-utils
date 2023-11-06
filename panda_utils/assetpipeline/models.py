@@ -46,6 +46,15 @@ def __patch_filename(filename):
     raise RuntimeError(f"Unsupported OS: {osname}")
 
 
+def __run_operator(operator, nodes):
+    used_names = set()
+    for node in nodes:
+        if node.node_name and node.node_name in used_names:
+            continue
+        used_names.add(node.node_name)
+        operator(node)
+
+
 def action_bam2egg(ctx: AssetContext):
     for file in ctx.files:
         if file.endswith(".bam"):
@@ -171,11 +180,14 @@ def action_collide(ctx: AssetContext, flags="keep,descend", method="sphere", gro
     ctx.cache_eggs()
     for file, eggtree in ctx.eggs.items():
         logger.info("%s: Adding collisions to %s/%s: flags=%s method=%s", ctx.name, file, group_name, flags, method)
-        groups = [group for group in eggtree.findall("Group") if group.node_name == group_name]
-        if groups:
-            logger.info("Found the named group!")
+        groups = [group for group in eggtree.findall("Group") if fnmatch.fnmatch(group.node_name, group_name)]
+        if not groups:
+            logger.warning("Did not find groups matching the pattern")
+            return
+
+        def add_collisions(group):
             new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
-            group_children = groups[0].children.children
+            group_children = group.children.children
             group_children.insert(0, new_node)
 
             if bitmask is not None:
@@ -187,10 +199,12 @@ def action_collide(ctx: AssetContext, flags="keep,descend", method="sphere", gro
             # when the egg file is read. So we have to delete every object that's not a polygon.
             # https://github.com/panda3d/panda3d/issues/1515
             # This was fixed in modern Panda3D versions but not everyone has updated to that
-            nodes = groups[0].findall("Line") + groups[0].findall("Patch") + groups[0].findall("PointLight")
+            nodes = group.findall("Line") + group.findall("Patch") + group.findall("PointLight")
             if nodes:
-                logger.warning("Found non-polygon objects while generating collisions, removing...")
-                groups[0].remove_nodes(set(nodes))
+                logger.warning("Found non-polygon objects in '%s', removing...", group.node_name)
+                group.remove_nodes(set(nodes))
+
+        __run_operator(add_collisions, groups)
 
 
 def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusions=""):
@@ -363,18 +377,20 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
     ctx.cache_eggs()
     for eggtree in ctx.eggs.values():
         # add uv scroll attribute
-        groups = [g for g in eggtree.findall("Group") if g.node_name == group_name]
+        groups = [g for g in eggtree.findall("Group") if fnmatch.fnmatch(g.node_name, group_name)]
         if not groups:
-            logger.error("%s: Did not find group with name: %s", ctx.name, group_name)
+            logger.error("%s: Did not find groups matching pattern: %s", ctx.name, group_name)
             return
-        group = groups[0]
 
-        if speed_u_val:
-            scroll_u = eggparse.EggLeaf("Scalar", "scroll_u", speed_u)
-            group.add_child(scroll_u)
-        if speed_v_val:
-            scroll_v = eggparse.EggLeaf("Scalar", "scroll_v", speed_v)
-            group.add_child(scroll_v)
+        def add_scroll(group):
+            if speed_u_val:
+                scroll_u = eggparse.EggLeaf("Scalar", "scroll_u", speed_u)
+                group.add_child(scroll_u)
+            if speed_v_val:
+                scroll_v = eggparse.EggLeaf("Scalar", "scroll_v", speed_v)
+                group.add_child(scroll_v)
+
+        __run_operator(add_scroll, groups)
 
 
 def action_egg2bam(ctx: AssetContext, flags="filter"):
