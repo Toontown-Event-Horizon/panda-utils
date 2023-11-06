@@ -3,3 +3,4 @@ config.ini
 venv
 dist
 panda_utils.egg-info
+__pycache__
