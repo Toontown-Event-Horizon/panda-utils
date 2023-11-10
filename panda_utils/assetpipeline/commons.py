@@ -5,7 +5,7 @@ import re
 
 import yaml
 
-from panda_utils.eggtree import eggparse
+from panda_utils.eggtree.parser import egg_tokenize
 from panda_utils.util import Context
 
 INPUT_FOLDER = pathlib.Path("input")
@@ -62,7 +62,7 @@ class AssetContext:
         for file in self.files:
             if file.endswith(".egg"):
                 with open(file) as f:
-                    tree = eggparse.egg_tokenize(f.readlines())
+                    tree = egg_tokenize(f.read())
                 self.eggs[file] = tree
 
     def uncache_eggs(self):

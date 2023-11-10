@@ -8,7 +8,8 @@ import shutil
 
 from panda_utils import util
 from panda_utils.assetpipeline.commons import AssetContext
-from panda_utils.eggtree import eggparse, operations
+from panda_utils.eggtree import operations
+from panda_utils.eggtree.nodes import EggBranch, EggLeaf
 from panda_utils.tools.convert import bam2egg, egg2bam
 from panda_utils.tools.palettize import remove_palette_indices
 
@@ -73,7 +74,7 @@ def action_optimize(ctx: AssetContext, flags=""):
     ctx.cache_eggs()
     for tree in ctx.eggs.values():
         for tex in tree.findall("Texture"):
-            textures.add(eggparse.sanitize_string(tex.get_child(0).value))
+            textures.add(operations.sanitize_string(tex.get_child(0).value))
 
     texture_mapper = build_asset_mapper(textures, ctx.model_name) if not keep_texture_names else {}
     for fnold, fnnew in texture_mapper.items():
@@ -86,7 +87,7 @@ def action_optimize(ctx: AssetContext, flags=""):
         if not keep_uv_names:
             for tex in eggtree.findall("Texture"):
                 tex_node = tex.get_child(0)
-                old_value = eggparse.sanitize_string(tex_node.value)
+                old_value = operations.sanitize_string(tex_node.value)
                 tex_node.value = texture_mapper.get(old_value, old_value)
 
                 uvn = {s for s in tex.findall("Scalar") if s.node_name == "uv-name"}
@@ -108,7 +109,7 @@ def action_optimize(ctx: AssetContext, flags=""):
         # We also need to remove the default cube and the cameras if they're present in the model
         nodeset = set()
         for node in eggtree.children:
-            if isinstance(node, eggparse.EggBranch) and node.node_type == "Group":
+            if isinstance(node, EggBranch) and node.node_type == "Group":
                 if node.node_name == "Camera" or node.node_name.startswith("Cube."):
                     nodeset.add(node)
         eggtree.remove_nodes(nodeset)
@@ -118,7 +119,7 @@ def action_transparent(ctx: AssetContext):
     ctx.cache_eggs()
     for file, tree in ctx.eggs.items():
         logger.info("%s: Adding transparency to: %s", ctx.name, file)
-        new_node = eggparse.EggLeaf("Scalar", "alpha", "dual")
+        new_node = EggLeaf("Scalar", "alpha", "dual")
         for tex in tree.findall("Texture"):
             for child in tex.children:
                 if repr(child) == repr(new_node):
@@ -131,10 +132,10 @@ def action_model_parent(ctx: AssetContext):
     ctx.cache_eggs()
     for eggtree in ctx.eggs.values():
         if not any(group for group in eggtree.findall("Group") if group.node_name == ctx.model_name):
-            group_node = eggparse.EggBranch("Group", ctx.model_name, [])
+            group_node = EggBranch("Group", ctx.model_name, [])
             removed_children = set()
             for node in eggtree.children:
-                if isinstance(node, eggparse.EggBranch) and node.node_type == "Group":
+                if isinstance(node, EggBranch) and node.node_type == "Group":
                     group_node.children.append(node)
                     removed_children.add(node)
 
@@ -186,13 +187,13 @@ def action_collide(ctx: AssetContext, flags="keep,descend", method="sphere", gro
             return
 
         def add_collisions(group):
-            new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
-            group_children = group.children.children
+            new_node = EggLeaf("Collide", group_name, f"{method} {flags}")
+            group_children = group.children
             group_children.insert(0, new_node)
 
             if bitmask is not None:
                 mask_hex = f"{bitmask:#010x}"
-                bitmask_node = eggparse.EggLeaf("Scalar", "collide-mask", mask_hex)
+                bitmask_node = EggLeaf("Scalar", "collide-mask", mask_hex)
                 group_children.insert(1, bitmask_node)
 
             # Fun fact: Setting <Collide> if the group has non-poly objects will cause a segfault
@@ -369,7 +370,7 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
         logger.error("%s: Invalid UV scroll: %s,%s", ctx.name, speed_u, speed_v)
         return
 
-    if speed_u == speed_u_val and speed_v == speed_v_val:
+    if speed_u_val == 0 and speed_v_val == 0:
         logger.error("%s: Both UV scroll speeds cannot be 0", ctx.name)
         return
 
@@ -384,10 +385,10 @@ def action_uvscroll(ctx: AssetContext, group_name, speed_u="0", speed_v="0"):
 
         def add_scroll(group):
             if speed_u_val:
-                scroll_u = eggparse.EggLeaf("Scalar", "scroll_u", speed_u)
+                scroll_u = EggLeaf("Scalar", "scroll_u", speed_u)
                 group.add_child(scroll_u)
             if speed_v_val:
-                scroll_v = eggparse.EggLeaf("Scalar", "scroll_v", speed_v)
+                scroll_v = EggLeaf("Scalar", "scroll_v", speed_v)
                 group.add_child(scroll_v)
 
         __run_operator(add_scroll, groups)
@@ -414,7 +415,7 @@ def action_egg2bam(ctx: AssetContext, flags="filter"):
         only_absolute = ctx.relative_mode and ctx.output_model_rel == ctx.output_texture_rel
         operations.set_texture_prefix(eggtree, ctx.output_texture_egg, only_absolute=only_absolute)
         for tex in eggtree.findall("Texture"):
-            full_path = eggparse.sanitize_string(tex.get_child(0).value)
+            full_path = operations.sanitize_string(tex.get_child(0).value)
             filename = full_path.split("/")[-1]
             pure_path = pathlib.PurePosixPath(full_path)
 

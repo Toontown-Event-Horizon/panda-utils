@@ -1,7 +1,9 @@
 import logging
 
 from panda_utils import util
-from panda_utils.eggtree import eggparse, operations
+from panda_utils.eggtree import operations
+from panda_utils.eggtree.nodes import EggLeaf
+from panda_utils.eggtree.parser import egg_tokenize
 from panda_utils.tools import convert
 
 logger = logging.getLogger("panda_utils.toontown")
@@ -11,9 +13,9 @@ def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
     util.run_panda(ctx, "egg-optchar", "-keepall", "-inplace", "-dart", "structured", path)
 
     with open(f"{ctx.working_path}/{path}") as f:
-        data = f.readlines()
+        data = f.read()
 
-    eggtree = eggparse.egg_tokenize(data)
+    eggtree = egg_tokenize(data)
     operations.set_texture_prefix(eggtree, f"{util.toon_head_phase}/maps")
 
     nodes_for_removal = (
@@ -28,7 +30,7 @@ def toon_head(ctx: util.Context, path: str, triplicate: bool = False) -> None:
             uv.node_name = None
 
     for eyes in eggtree.findall("Texture"):
-        scalar_alpha_dual = eggparse.EggLeaf("Scalar", "alpha", "dual")
+        scalar_alpha_dual = EggLeaf("Scalar", "alpha", "dual")
         eyes.add_child(scalar_alpha_dual)
 
     operations.add_comment(eggtree, "Toontown-Event-Horizon/PandaUtils ToonHead module")

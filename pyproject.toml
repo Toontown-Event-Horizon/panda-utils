@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "panda_utils"
-version = "1.6b4"
+version = "2.0a1"
 authors = [
     {name = "Toontown: Event Horizon", email = "development@toontowneventhorizon.com"}
 ]
@@ -16,6 +16,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+# We use lark since Egg Parser v2 for better compatibility with different exporters
+dependencies = ["lark~=1.1.8", "lark-cython~=0.0.15"]
 
 [project.optional-dependencies]
 imagery = ["Pillow~=9.0"]

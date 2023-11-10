@@ -1,7 +1,8 @@
 import logging
 
 from panda_utils import util
-from panda_utils.eggtree import eggparse, operations
+from panda_utils.eggtree import operations
+from panda_utils.eggtree.parser import egg_tokenize
 
 logger = logging.getLogger("panda_utils.animconvert")
 
@@ -13,11 +14,11 @@ def animation_names(ctx: util.Context, path: str, output: str, conversion_names:
     logger.info("Converted file %s to egg, reading data...", path)
 
     with open(eggpath) as f:
-        data = f.readlines()
+        data = f.read()
 
     logger.info("Data read, converting names...")
 
-    eggtree = eggparse.egg_tokenize(data)
+    eggtree = egg_tokenize(data)
     for node in eggtree.findall("Table"):
         if converted_name := conversion_names.get(node.node_name):
             logger.info("Converting %s to %s", node.node_name, converted_name)

@@ -4,16 +4,16 @@ import pathlib
 import shutil
 
 from panda_utils import util
-from panda_utils.eggtree import eggparse
+from panda_utils.eggtree.parser import egg_tokenize
 
 logger = logging.getLogger("panda_utils.palettize")
 
 
 def remove_palette_indices(egg_path):
     with open(egg_path) as f:
-        data = f.readlines()
+        data = f.read()
 
-    eggtree = eggparse.egg_tokenize(data)
+    eggtree = egg_tokenize(data)
     all_groups = eggtree.findall("Group")
     for group in all_groups:
         if "-" not in group.node_name:

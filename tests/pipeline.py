@@ -3,7 +3,7 @@ import unittest
 
 from panda_utils.assetpipeline.commons import AssetContext
 from panda_utils.assetpipeline.imports import ALL_ACTIONS
-from panda_utils.eggtree import eggparse
+from panda_utils.eggtree.parser import egg_tokenize
 
 
 class PipelineTest(unittest.TestCase):
@@ -18,13 +18,13 @@ class PipelineTest(unittest.TestCase):
         return ctx.eggs["test.egg"]
 
     def test_collide(self):
-        eggfile = [
-            "<Group> my_name {",
-            "  <Group> my_name {",
-            "  }",
-            "}",
-        ]
-        tree = eggparse.egg_tokenize(eggfile)
+        eggfile = """
+        <Group> my_name {
+          <Group> my_name {
+          }
+        }
+        """
+        tree = egg_tokenize(eggfile)
         context = self.make_context(tree)
         tree = self.run_operator(context, "collide", group_name="my_name")
         collides = tree.findall("Collide")
@@ -35,19 +35,14 @@ class PipelineTest(unittest.TestCase):
         self.assertEqual(collide.node_value, "Sphere keep descend")
 
     def test_collide_fnmatch(self):
-        eggfile = [
-            "<Group> group1 {",
-            "}",
-            "<Group> group2 {",
-            "}",
-            "<Group> group3 {",
-            "}",
-            "<Group> group3 {",
-            "}",
-            "<Group> outsider {",
-            "}",
-        ]
-        tree = eggparse.egg_tokenize(eggfile)
+        eggfile = """
+        <Group> group1 {}
+        <Group> group2 {}
+        <Group> group3 {}
+        <Group> group3 {}
+        <Group> outsider {}
+        """
+        tree = egg_tokenize(eggfile)
         context = self.make_context(tree)
         tree = self.run_operator(context, "collide", group_name="group*")
         first, second, third, dupl_third, outsider = tree.findall("Group")

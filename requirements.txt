@@ -3,3 +3,5 @@ platformdirs
 pyyaml
 panda3d-blend2bam
 numpy~=1.24.0
+lark~=1.1.8
+lark-cython~=0.0.15
