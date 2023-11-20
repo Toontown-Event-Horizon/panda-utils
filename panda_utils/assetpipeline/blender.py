@@ -93,6 +93,10 @@ def __run_blend2bam(ctx: AssetContext, file, flags):
 
 
 def __run_gltf2bam(ctx: AssetContext, file, flags):
+    logger.info("%s: Patching texture paths: %s", ctx.name, file)
+    full_path = pathlib.Path(ctx.cwd, file)
+    run_blender(ctx.cwd, full_path, "blender/patch_paths.py")
+
     logger.info("%s: Exporting to GLTF: %s", ctx.name, file)
     full_path = pathlib.Path(ctx.cwd, file)
     intermediate_file = file[:-5] + "glb"
