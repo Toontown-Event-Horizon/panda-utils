@@ -421,8 +421,18 @@ def action_egg2bam(ctx: AssetContext, flags="filter"):
         #       which it probably shouldn't do because it breaks models with complicated texture paths
         only_absolute = ctx.relative_mode and ctx.output_model_rel == ctx.output_texture_rel
         operations.set_texture_prefix(eggtree, ctx.output_texture_egg, only_absolute=only_absolute)
+
+        resolution_paths = set()
         for tex in eggtree.findall("Texture"):
             full_path = eggparse.sanitize_string(tex.get_child(0).value)
+            resolution_paths.add(full_path)
+
+            for scalar in tex.findall("Scalar"):
+                if scalar.node_name == "alpha-file":
+                    full_path = eggparse.sanitize_string(scalar.node_value)
+                    resolution_paths.add(full_path)
+
+        for full_path in resolution_paths:
             filename = __locate_file(full_path.split("/")[-1])
             if filename is None:
                 logger.error("%s: Texture %s was not found!", ctx.name, full_path)
