@@ -76,7 +76,28 @@ class AssetContext:
 
     @property
     def files(self):
-        return sorted(os.listdir())
+        """
+        Returns the file names in the folder, as well as any subfolders,
+        in a consistent order. If subfolders are involved,
+        the order is not guaranteed to be consistent across OS's (but likely is).
+        """
+        output = []
+        subfolders = []
+        for entry in os.scandir():
+            if entry.is_dir():
+                subfolders.append(entry.name)
+            else:
+                output.append(entry.name)
+
+        other_files = []
+        for sf in sorted(subfolders):
+            sf_items = []
+            for subpath, dirs, files in os.walk(sf):
+                for file in files:
+                    sf_items.append(str(pathlib.Path(subpath) / file))
+            other_files.extend(sorted(sf_items))
+
+        return sorted(output) + other_files
 
     @staticmethod
     def get_injection_path(name):
