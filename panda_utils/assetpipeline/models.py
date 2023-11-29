@@ -1,4 +1,5 @@
 import fnmatch
+import functools
 import logging
 import os
 import pathlib
@@ -17,12 +18,17 @@ logger = logging.getLogger("panda_utils.pipeline.models")
 joint_regex = re.compile(r"^(.+)\[([xyzhprijkabc]+)]$")
 
 
-def __locate_file(filename):
+@functools.cache
+def __file_locator():
+    locator = {}
     for dirpath, dirs, files in os.walk("."):
-        if filename in files:
-            return str(pathlib.Path(dirpath) / filename)
+        for filename in files:
+            locator[filename] = str(pathlib.Path(dirpath) / filename)
+    return locator
 
-    return None
+
+def __locate_file(filename):
+    return __file_locator().get(filename)
 
 
 def build_asset_mapper(assets, name):
