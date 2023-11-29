@@ -91,8 +91,11 @@ class AssetContext:
             data = {}
         else:
             with open(YAML_CONFIG_FILENAME) as f:
-                data = yaml.safe_load(f)
+                data = yaml.safe_load(f) or {}
 
+        if not isinstance(data, dict):
+            logger.error("model-config.yml must be a dict, %s given. Using empty config instead.", type(data).__name__)
+            data = {}
         self.model_config = data
 
     def run_action_through_config(self, action, name, use_fallback):
