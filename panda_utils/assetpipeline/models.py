@@ -17,6 +17,14 @@ logger = logging.getLogger("panda_utils.pipeline.models")
 joint_regex = re.compile(r"^(.+)\[([xyzhprijkabc]+)]$")
 
 
+def __locate_file(filename):
+    for dirpath, dirs, files in os.walk("."):
+        if filename in files:
+            return str(pathlib.Path(dirpath) / filename)
+
+    return None
+
+
 def build_asset_mapper(assets, name):
     output = {}
     counter = 0
@@ -415,7 +423,11 @@ def action_egg2bam(ctx: AssetContext, flags="filter"):
         operations.set_texture_prefix(eggtree, ctx.output_texture_egg, only_absolute=only_absolute)
         for tex in eggtree.findall("Texture"):
             full_path = eggparse.sanitize_string(tex.get_child(0).value)
-            filename = full_path.split("/")[-1]
+            filename = __locate_file(full_path.split("/")[-1])
+            if filename is None:
+                logger.error("%s: Texture %s was not found!", ctx.name, full_path)
+                continue
+
             pure_path = pathlib.PurePosixPath(full_path)
 
             if ctx.relative_mode:
