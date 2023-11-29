@@ -59,7 +59,7 @@ def load_from_file(filename, asset_markers=()):
                 continue
 
             pipeline = f"{PANDA_UTILS} {task} {tgt.model_path} {tgt.texture_path} {pipeline}"
-            requires_commons = " cts:" in pipeline
+            requires_commons = " cts" in pipeline
             target_model = BUILT_FOLDER / tgt.model_path / f"{task.name}.bam"
 
             rm_files = []
