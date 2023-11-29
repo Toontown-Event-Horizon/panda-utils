@@ -5,7 +5,7 @@ import shutil
 import doit
 import yaml
 
-from panda_utils.assetpipeline.commons import BUILT_FOLDER, INPUT_FOLDER, file_out_regex
+from panda_utils.assetpipeline.commons import BUILT_FOLDER, INPUT_FOLDER, file_out_regex, YAML_CONFIG_FILENAME
 from panda_utils.assetpipeline.target_parser import StepContext, TargetsFile, make_pipeline
 
 PANDA_UTILS = "python -m panda_utils.assetpipeline"
@@ -14,7 +14,21 @@ ALL_FILES = []
 COMMON_TS = []
 
 
-def load_from_file(filename):
+def resolve_cwd(filename):
+    current_folder = pathlib.Path(os.getcwd())
+    attempts = 0
+    while attempts < 25 and not (current_folder / filename).exists():
+        attempts += 1
+        current_folder = current_folder.parent
+
+    if not (current_folder / filename).exists():
+        print(f"Error: Unable to locate {filename}. Make sure this file exists and try again.")
+        exit(1)
+
+    os.chdir(current_folder)
+
+
+def load_from_file(filename, asset_markers=()):
     with open(filename) as f:
         tf = TargetsFile(**yaml.safe_load(f))
 
@@ -30,7 +44,14 @@ def load_from_file(filename):
         if not tgt.active:
             continue
 
-        subtasks = [pathlib.Path(dirname) for (dirname, dirs, files) in os.walk(INPUT_FOLDER / folder) if not dirs]
+        subtasks = []
+        for dirname, dirs, files in os.walk(INPUT_FOLDER / folder):
+            if not dirs:
+                subtasks.append(pathlib.Path(dirname))
+            elif any(marker for marker in files if marker in asset_markers):
+                subtasks.append(pathlib.Path(dirname))
+                dirs[:] = []
+
         for task in subtasks:
             ctx = StepContext(os.listdir(task), tf.settings, tgt.import_method or tf.settings.default_import_method)
             pipeline = make_pipeline(tgt, task.name, ctx)
@@ -105,7 +126,7 @@ def task_build():
         yield {
             "name": folder.name,
             "actions": [(rm_files, [tex_files]), callback],
-            "file_dep": [folder / file for file in os.listdir(folder)],
+            "file_dep": [pathlib.Path(dirname) / file for dirname, dirs, files in os.walk(folder) for file in files],
             "targets": [target_model],
             "verbosity": 2,
             "uptodate": [(check_target, [callback])],
@@ -127,7 +148,8 @@ def task_rebuild():
 
 
 def main():
-    load_from_file("targets.yml")
+    resolve_cwd("targets.yml")
+    load_from_file("targets.yml", {YAML_CONFIG_FILENAME})
     doit.run(globals())
 
 
