@@ -1,4 +1,4 @@
-# Panda3D Utils v1.5
+# Panda3D Utils v1.6
  
 Panda Utils is a set of Python scripts meant to help various projects
 running on the game engine [Panda3D](https://panda3d.org).
