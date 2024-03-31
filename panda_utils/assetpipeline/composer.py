@@ -68,16 +68,22 @@ def load_from_file(filename, asset_markers=()):
                 end = 0 if tgt.copy_subdir < 0 else tgt.copy_subdir + 1
                 start = tgt.copy_subdir if tgt.copy_subdir < 0 else 1
 
-                for i in range(start, end, 1):
-                    tgt.model_path += f"/{task.parts[i]}"
-                    tgt.texture_path += f"/{task.parts[i]}"
+                model_path = tgt.model_path
+                texture_path = tgt.texture_path
 
-            pipeline = f"{PANDA_UTILS} {task} {tgt.model_path} {tgt.texture_path} {pipeline}"
+                for i in range(start, end, 1):
+                    model_path += f"/{task.parts[i]}"
+                    texture_path += f"/{task.parts[i]}"
+            else:
+                model_path = tgt.model_path
+                texture_path = tgt.texture_path
+
+            pipeline = f"{PANDA_UTILS} {task} {model_path} {texture_path} {pipeline}"
             requires_commons = " cts" in pipeline
-            target_model = BUILT_FOLDER / tgt.model_path / f"{task.name}.bam"
+            target_model = BUILT_FOLDER / model_path / f"{task.name}.bam"
 
             rm_files = []
-            path = BUILT_FOLDER / tgt.texture_path
+            path = BUILT_FOLDER / texture_path
             if path.exists():
                 for file in os.listdir(path):
                     if file.startswith(task.name) and file_out_regex.match(file):
