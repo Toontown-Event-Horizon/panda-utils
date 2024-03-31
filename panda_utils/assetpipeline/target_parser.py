@@ -131,6 +131,9 @@ class SingleTarget(BaseModel):
     texture_path: str
     """Where to put the texture after exporting? For example: phase_3/maps. Required."""
 
+    copy_subdir: int = 0
+    """Should we copy the directory structure as best we can?"""
+
     callback_type: CallbackType = CallbackType.STANDARD
     """Callback type. Currently supported: standard, actor, 2d palette."""
 
