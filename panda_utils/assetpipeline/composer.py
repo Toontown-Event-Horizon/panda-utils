@@ -59,14 +59,15 @@ def load_from_file(filename, asset_markers=()):
                 continue
 
             if tgt.copy_subdir != 0:
-                if abs(tgt.copy_subdir) > len(task.parts):
+                # We set up so if we are negative we work up from our file
+                # If we are positive we work down from input
+                end = 0 if tgt.copy_subdir < 0 else tgt.copy_subdir + 2
+                start = tgt.copy_subdir if tgt.copy_subdir < 0 else 2
+            
+                if max(abs(end), abs(start)) > len(task.parts):
                     raise ValueError(
                         f"Copy_subdir value for: {folder} is greater then the dir depth found. Use a smaller number."
                     )
-                # We set up so if we are negative we work up from our file
-                # If we are positive we work down from input
-                end = 0 if tgt.copy_subdir < 0 else tgt.copy_subdir + 1
-                start = tgt.copy_subdir if tgt.copy_subdir < 0 else 1
 
                 model_path = tgt.model_path
                 texture_path = tgt.texture_path
