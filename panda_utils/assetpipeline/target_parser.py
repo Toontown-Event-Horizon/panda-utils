@@ -131,6 +131,17 @@ class SingleTarget(BaseModel):
     texture_path: str
     """Where to put the texture after exporting? For example: phase_3/maps. Required."""
 
+    copy_subdir: int = 0
+    """
+    This value is used to control the subdirectory structure after building this input folder.
+    Positive values copy parts of the path starting from the input folder.
+    Negative values copy parts of the path starting from the input model.
+    For example, if the value is `+1` and the input file is located at input_folder/folderA/folderB/folderC/model.blend
+    the output model will be located at modelOutput/folderA/model.bam; if the value is `-1` the output model will be at
+    modelOutput/folderC/model.bam.
+    Defaults to 0, which causes all assets under `input_folder` to be put into the same folder modelOutput.
+    """
+
     callback_type: CallbackType = CallbackType.STANDARD
     """Callback type. Currently supported: standard, actor, 2d palette."""
 

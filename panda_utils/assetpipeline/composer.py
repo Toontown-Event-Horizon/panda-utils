@@ -59,12 +59,33 @@ def load_from_file(filename, asset_markers=()):
             if pipeline is None:
                 continue
 
-            pipeline = f"{PANDA_UTILS} {task} {tgt.model_path} {tgt.texture_path} {pipeline}"
+            if tgt.copy_subdir != 0:
+                # We set up so if we are negative we work up from our file
+                # If we are positive we work down from input
+                end = 0 if tgt.copy_subdir < 0 else tgt.copy_subdir + 2
+                start = tgt.copy_subdir if tgt.copy_subdir < 0 else 2
+            
+                if max(abs(end), abs(start)) > len(task.parts):
+                    raise ValueError(
+                        f"Copy_subdir value for: {folder} is greater then the dir depth found. Use a smaller number."
+                    )
+
+                model_path = tgt.model_path
+                texture_path = tgt.texture_path
+
+                for i in range(start, end, 1):
+                    model_path += f"/{task.parts[i]}"
+                    texture_path += f"/{task.parts[i]}"
+            else:
+                model_path = tgt.model_path
+                texture_path = tgt.texture_path
+
+            pipeline = f"{PANDA_UTILS} {task} {model_path} {texture_path} {pipeline}"
             requires_commons = " cts" in pipeline
-            target_model = BUILT_FOLDER / tgt.model_path / f"{task.name}.bam"
+            target_model = BUILT_FOLDER / model_path / f"{task.name}.bam"
 
             rm_files = []
-            path = BUILT_FOLDER / tgt.texture_path
+            path = BUILT_FOLDER / texture_path
             if path.exists():
                 for file in os.listdir(path):
                     if file.startswith(task.name) and file_out_regex.match(file):
