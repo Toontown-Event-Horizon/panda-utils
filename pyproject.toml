@@ -21,7 +21,7 @@ classifiers = [
 imagery = ["Pillow>=9.0"]
 autopath = ["panda3d~=1.10,!=1.10.13.*"]
 runnable = ["platformdirs~=3.5"]
-pipeline = ["pyyaml~=6.0", "numpy~=1.24.0", "panda3d-blend2bam!=1.0.0", "panda3d~=1.10,!=1.10.13.*"]
+pipeline = ["pyyaml~=6.0", "numpy~=1.24", "panda3d-blend2bam!=1.0.0", "panda3d~=1.10,!=1.10.13.*"]
 composer = ["panda_utils[pipeline]", "doit", "pydantic"]
 
 everything = ["panda_utils[imagery]", "panda_utils[autopath]", "panda_utils[runnable]", "panda_utils[composer]"]
