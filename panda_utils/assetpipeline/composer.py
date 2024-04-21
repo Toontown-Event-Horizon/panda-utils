@@ -1,6 +1,7 @@
 import os
 import pathlib
 import shutil
+import sys
 
 import doit
 import yaml
@@ -8,7 +9,7 @@ import yaml
 from panda_utils.assetpipeline.commons import BUILT_FOLDER, INPUT_FOLDER, file_out_regex, YAML_CONFIG_FILENAME
 from panda_utils.assetpipeline.target_parser import StepContext, TargetsFile, make_pipeline
 
-PANDA_UTILS = "python -m panda_utils.assetpipeline"
+PANDA_UTILS = f"{sys.executable} -m panda_utils.assetpipeline"
 DOIT_CONFIG = {"default_tasks": ["build"]}
 ALL_FILES = []
 COMMON_TS = []
