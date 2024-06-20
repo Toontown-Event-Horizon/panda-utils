@@ -26,7 +26,7 @@ def action_bscript(ctx: AssetContext, script):
     for file in ctx.files:
         if file.endswith(".blend"):
             logger.info("%s: Running bscript on file: %s", ctx.name, file)
-            run_blender_raw(ctx.cwd, file, ctx.cwd.parent.parent / "bscripts" / script)
+            run_blender_raw(ctx.cwd, ctx.cwd / file, ctx.cwd.parent.parent / "bscripts" / script)
 
 
 def action_preblend(ctx: AssetContext):
