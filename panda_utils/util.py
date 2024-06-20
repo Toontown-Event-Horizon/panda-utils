@@ -58,8 +58,8 @@ class Context:
             raise ValueError("The config requires setting paths.resources!")
 
         options = cfg.get("options", {})
-        obj.panda_path = ""
-        if options.get("panda3d_path_inherit"):
+        obj.panda_path = cfg_paths.get("panda")
+        if not obj.panda_path or options.get("panda3d_path_inherit"):
             python_path = os.path.dirname(sys.executable)
             paths = [
                 pathlib.Path(python_path, "egg-trans"),
@@ -73,8 +73,6 @@ class Context:
                 if path.exists():
                     obj.panda_path = str(path.parent)
                     break
-        if not obj.panda_path:
-            obj.panda_path = cfg_paths.get("panda")
         if not obj.panda_path:
             raise ValueError("Panda3D was not found on the search path!")
         return obj
