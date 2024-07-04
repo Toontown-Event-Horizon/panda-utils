@@ -1,4 +1,4 @@
-import distutils.spawn
+import shutil
 import importlib.resources
 import logging
 import os
@@ -96,9 +96,9 @@ def choose_binary(*filename):
         if pathlib.Path(exe_filename).exists():
             return exe_filename
         raise RuntimeError(f"Unable to find binary (installation issue): {filename}")
-    elif path := distutils.spawn.find_executable(filename):
+    elif path := shutil.which(filename):
         return path
-    elif path := distutils.spawn.find_executable(filename + ".exe"):
+    elif path := shutil.which(filename + ".exe"):
         return path
     else:
         raise RuntimeError(f"Unable to find binary (not on PATH): {filename}")
