@@ -55,8 +55,9 @@ def load_from_file(filename, asset_markers=()):
 
         for task in subtasks:
             ctx = StepContext(os.listdir(task), tf.settings, tgt.import_method or tf.settings.default_import_method)
-            pipeline = make_pipeline(tgt, task.name, ctx)
-            if pipeline is None:
+            # Contains the pipeline steps per yaml config
+            pipeline_steps = make_pipeline(tgt, task.name, ctx)
+            if pipeline_steps is None:
                 continue
 
             if tgt.copy_subdir != 0:
@@ -80,8 +81,14 @@ def load_from_file(filename, asset_markers=()):
                 model_path = tgt.model_path
                 texture_path = tgt.texture_path
 
-            pipeline = f"{PANDA_UTILS} {task} {model_path} {texture_path} {pipeline}"
-            requires_commons = " cts" in pipeline
+            pipeline_args = [
+                PANDA_UTILS,
+                task,
+                model_path,
+                texture_path,
+                *pipeline_steps.split()
+            ]
+            requires_commons = " cts" in pipeline_steps  # Does this config require us to use common textures?
             target_model = BUILT_FOLDER / model_path / f"{task.name}.bam"
 
             rm_files = []
@@ -90,7 +97,7 @@ def load_from_file(filename, asset_markers=()):
                 for file in os.listdir(path):
                     if file.startswith(task.name) and file_out_regex.match(file):
                         rm_files.append(path / file)
-            ALL_FILES.append((task, pipeline.split(), target_model, requires_commons, rm_files))
+            ALL_FILES.append((task, pipeline_args, target_model, requires_commons, rm_files))
 
 
 def task_copy():
