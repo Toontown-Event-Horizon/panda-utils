@@ -2,7 +2,7 @@ import abc
 import dataclasses
 import os
 from enum import Enum
-from typing import Union
+from typing import Union, List
 
 from pydantic import BaseModel
 
@@ -344,7 +344,7 @@ def insert_extra_steps(pipeline: list[str], extra_steps):
             insert_extra_step(pipeline, name, value)
 
 
-def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Union[None, str]:
+def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> List[str] | None:
     exporter_option = target.import_method
     if override := target.overrides.get(model_name):
         callback_type = override.callback_type or target.callback_type
@@ -385,4 +385,4 @@ def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Un
                 pipeline_blockout.append(value)
 
     insert_extra_steps(pipeline_blockout, extra_steps)
-    return " ".join(pipeline_blockout)
+    return pipeline_blockout
