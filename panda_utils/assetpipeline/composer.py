@@ -57,7 +57,7 @@ def load_from_file(filename, asset_markers=()):
             ctx = StepContext(os.listdir(task), tf.settings, tgt.import_method or tf.settings.default_import_method)
             # Contains the pipeline steps per yaml config
             pipeline_steps = make_pipeline(tgt, task.name, ctx)
-            if pipeline_steps is None:
+            if not pipeline_steps:
                 continue
 
             if tgt.copy_subdir != 0:
@@ -65,7 +65,7 @@ def load_from_file(filename, asset_markers=()):
                 # If we are positive we work down from input
                 end = 0 if tgt.copy_subdir < 0 else tgt.copy_subdir + 2
                 start = tgt.copy_subdir if tgt.copy_subdir < 0 else 2
-            
+
                 if max(abs(end), abs(start)) > len(task.parts):
                     raise ValueError(
                         f"Copy_subdir value for: {folder} is greater then the dir depth found. Use a smaller number."
@@ -86,9 +86,12 @@ def load_from_file(filename, asset_markers=()):
                 task,
                 model_path,
                 texture_path,
-                *pipeline_steps.split()
+                *pipeline_steps
             ]
-            requires_commons = " cts" in pipeline_steps  # Does this config require us to use common textures?
+
+            # Does this config require us to use common textures?
+            requires_commons = any([command.lower().startswith("cts:") for command in pipeline_steps])
+
             target_model = BUILT_FOLDER / model_path / f"{task.name}.bam"
 
             rm_files = []
