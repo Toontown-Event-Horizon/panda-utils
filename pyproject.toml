@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "panda_utils"
-version = "1.6.3"
+version = "1.6.4"
 authors = [
-    {name = "Toontown: Event Horizon", email = "development@toontowneventhorizon.com"}
+    { name = "Toontown: Event Horizon", email = "development@toontowneventhorizon.com" },
 ]
 description = "PandaUtils includes multiple tools for basic Panda3D automation"
 readme = "README.md"
@@ -21,11 +21,48 @@ classifiers = [
 imagery = ["Pillow>=9.0"]
 autopath = ["panda3d~=1.10,!=1.10.13.*"]
 runnable = ["platformdirs~=3.5"]
-pipeline = ["pyyaml~=6.0", "numpy~=1.24", "panda3d-blend2bam!=1.0.0", "panda3d~=1.10,!=1.10.13.*"]
+pipeline = [
+    "pyyaml~=6.0",
+    "numpy~=1.24",
+    "panda3d-blend2bam!=1.0.0",
+    "panda3d~=1.10,!=1.10.13.*",
+]
 composer = ["panda_utils[pipeline]", "doit", "pydantic"]
 
-everything = ["panda_utils[imagery]", "panda_utils[autopath]", "panda_utils[runnable]", "panda_utils[composer]"]
+everything = [
+    "panda_utils[imagery]",
+    "panda_utils[autopath]",
+    "panda_utils[runnable]",
+    "panda_utils[composer]",
+]
 
 [project.urls]
 homepage = "https://github.com/toontown-event-horizon/panda-utils"
 bugtracker = "https://github.com/toontown-event-horizon/panda-utils/issues"
+
+
+[tool.ruff]
+line-length = 120
+
+[tool.pyright]
+ignore = [
+    # These files are dev-only
+    "_vulture_whitelist.py",
+    "tests",
+    # These files make no sense to typecheck
+    "toontown/ai/AIStart.py",
+    "toontown/uberdog/UDStart.py",
+    "toontown/toonbase/ToontownStart.py",
+    "toontown/toonbase/ToontownPreconfigure.py",
+    "toontown/toonbase/NuitkaEntrypoint.py",
+    "otp/ai/AIBaseGlobal.py",
+    "otp/distributed/DCClassImports.py",
+    "toontown/toonbase/ConfigureUberGlobals.py",
+    "mockery/mockerycore.py",
+]
+pythonVersion = "3.9"
+reportMissingTypeStubs = false
+reportUnusedCallResult = false
+reportExplicitAny = false
+reportAny = false
+reportUnusedVariable = false

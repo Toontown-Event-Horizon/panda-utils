@@ -9,7 +9,7 @@ import yaml
 from panda_utils.assetpipeline.commons import BUILT_FOLDER, INPUT_FOLDER, file_out_regex, YAML_CONFIG_FILENAME
 from panda_utils.assetpipeline.target_parser import StepContext, TargetsFile, make_pipeline
 
-PANDA_UTILS = [sys.executable, '-m', 'panda_utils.assetpipeline']
+PANDA_UTILS = [sys.executable, "-m", "panda_utils.assetpipeline"]
 DOIT_CONFIG = {"default_tasks": ["build"]}
 ALL_FILES = []
 COMMON_TS = []
@@ -81,13 +81,7 @@ def load_from_file(filename, asset_markers=()):
                 model_path = tgt.model_path
                 texture_path = tgt.texture_path
 
-            pipeline_args = [
-                *PANDA_UTILS,
-                task,
-                model_path,
-                texture_path,
-                *pipeline_steps
-            ]
+            pipeline_args = [*PANDA_UTILS, task, model_path, texture_path, *pipeline_steps]
 
             # Does this config require us to use common textures?
             requires_commons = any([command.lower().startswith("cts:") for command in pipeline_steps])
@@ -110,6 +104,7 @@ def task_copy():
 
     def copy_files():
         from panda_utils.__main__ import make_context
+
         panda_utils_ctx = make_context()
         target_path = panda_utils_ctx.resources_path
         for phase in os.listdir(BUILT_FOLDER):
@@ -121,6 +116,8 @@ def task_copy():
 
 
 def check_target(task, values, callback):
+    callback = [str(x) for x in callback]
+
     def save_callback():
         return {"callback": callback}
 
