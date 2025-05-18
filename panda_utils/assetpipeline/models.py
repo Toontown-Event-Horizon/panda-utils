@@ -230,12 +230,7 @@ def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusion
     flag_list = flags.split(",")
 
     logger.info("%s: Creating a TXA file...", ctx.name)
-    txa_text = (
-        f":palette {palette_size} {palette_size}\n"
-        ":imagetype png\n"
-        ":powertwo 1\n"
-        f":group {ctx.model_name} dir .\n"
-    )
+    txa_text = f":palette {palette_size} {palette_size}\n:imagetype png\n:powertwo 1\n:group {ctx.model_name} dir .\n"
     if isinstance(exclusions, str):
         exclusions = list(filter(None, exclusions.split(",")))
 
@@ -285,10 +280,11 @@ def action_palettize(ctx: AssetContext, palette_size="1024", flags="", exclusion
             texture_name = texture.get_child(0)
             texture_name.value = texture_name.value.replace("palette-temp/", "", 1)
     palette_folder = pathlib.Path("palette-temp")
-    for file in os.listdir(palette_folder):
-        if "_palette_" in file:
-            shutil.move(palette_folder / file, file)
-    shutil.rmtree(palette_folder)
+    if palette_folder.exists():
+        for file in os.listdir(palette_folder):
+            if "_palette_" in file:
+                shutil.move(palette_folder / file, file)
+        shutil.rmtree(palette_folder)
 
 
 def action_optchar(ctx: AssetContext, flags="", expose="", zero=""):

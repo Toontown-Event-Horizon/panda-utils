@@ -4,3 +4,4 @@ venv
 dist
 panda_utils.egg-info
 __pycache__
+.vscode

@@ -76,10 +76,6 @@ def __run_export_util(ctx: AssetContext, binary, input_file, output_file, flags)
     if err and "KeyError: 'nodes'" in err:
         logger.error("%s: Blender output an empty model, aborting.", ctx.name)
         ctx.valid = False
-    elif err:
-        logger.error("%s: Blender failed", ctx.name)
-        print(err)
-        exit(1)
 
 
 def __run_blend2bam(ctx: AssetContext, file, flags):

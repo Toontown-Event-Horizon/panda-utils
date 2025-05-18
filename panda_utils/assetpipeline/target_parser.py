@@ -304,7 +304,7 @@ PIPELINE_BLOCKOUTS = {
             ParametrizedStep("palettize", default="1024"),
             ParametrizedStep("egg2bam", default=None),
         ],
-    )
+    ),
 }
 
 
@@ -366,8 +366,7 @@ def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Li
         ctx.exporter = exporter_option
     exporter_valid = ctx.exporter in PIPELINE_BLOCKOUTS[callback_type].exporters
     ctx.exporter_override = (
-        ctx.exporter if exporter_valid
-        else (PIPELINE_BLOCKOUTS[callback_type].exporters or ["no_exporter"])[0]
+        ctx.exporter if exporter_valid else (PIPELINE_BLOCKOUTS[callback_type].exporters or ["no_exporter"])[0]
     )
     pipeline_blockout = []
     for step in PIPELINE_BLOCKOUTS[callback_type].steps:
@@ -377,12 +376,12 @@ def make_pipeline(target: SingleTarget, model_name: str, ctx: StepContext) -> Li
                 ctx.parameter = item
                 value = step.make_string(ctx)
                 if value:
-                    pipeline_blockout.append(value)
+                    pipeline_blockout.extend(value.split(" "))
         else:
             ctx.parameter = parameter
             value = step.make_string(ctx)
             if value:
-                pipeline_blockout.append(value)
+                pipeline_blockout.extend(value.split(" "))
 
     insert_extra_steps(pipeline_blockout, extra_steps)
     return pipeline_blockout
