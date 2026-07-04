@@ -197,7 +197,7 @@ def action_collide(ctx: AssetContext, flags="keep,descend", method="sphere", gro
         groups = [group for group in eggtree.findall("Group") if fnmatch.fnmatch(group.node_name, group_name)]
         if not groups:
             logger.warning("Did not find groups matching the pattern")
-            return
+            continue
 
         def add_collisions(group):
             new_node = eggparse.EggLeaf("Collide", group_name, f"{method} {flags}")
